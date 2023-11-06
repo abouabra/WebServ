@@ -8,12 +8,12 @@
 
 */
 
-Server::Server()
+Server::Server(): config(Config("config/default.conf"))
 {
 	
 }
 
-Server::Server(Config &config)
+Server::Server(Config &config) : config(config)
 {
 	max_fd = 0;
 	for(size_t i = 0;i < config.servers.size(); i++)
@@ -31,7 +31,7 @@ Server::~Server()
 	
 }
 
-Server::Server(Server const &src)
+Server::Server(Server const &src): config(src.config)
 {
 	*this = src;
 }
@@ -117,7 +117,7 @@ void Server::run_server()
 		for(size_t i = 0; i < server_fds.size(); i++)
 		{
 			if(FD_ISSET(server_fds[i], &reads))
-				accept_new_connection(server_fds[i]);
+				accept_new_connection(server_fds[i], i);
 		}
 
 		// check for data from clients
@@ -155,7 +155,7 @@ void Server::set_to_non_blocking(int client_fd)
 		log("Error setting socket flags", ERROR);
 }
 
-void Server::accept_new_connection(int server_fd)
+void Server::accept_new_connection(int server_fd, int index)
 {
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_len = sizeof(client_addr);
@@ -174,7 +174,7 @@ void Server::accept_new_connection(int server_fd)
 	FD_SET(client_fd, &master);
 	FD_SET(client_fd, &reads);
 	
-	Client client(client_fd, client_addr);
+	Client client(client_fd, client_addr, index);
 	client.set_timer(time(NULL));
 	clients.push_back(client);
 	log("New connection on: " + itoa(client_fd), INFO);
@@ -217,9 +217,9 @@ int Server::read_from_client(Client &client, int i)
 	}
 	FD_SET(client.get_socket_fd(), &writes);
 	// FD_CLR(client.get_socket_fd(), &reads);
-
-	client.set_request(buffer);
-	client.get_request().parse_request();
+	Request request(buffer);
+	client.set_request(request);
+	client.get_request().parse_request(config.servers[client.get_server_index()]);
 	return 0;
 }
 
@@ -227,7 +227,7 @@ int Server::write_to_client(Client &client, int index)
 {
 	client.set_timer(time(NULL));
 	// std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Hello, World!</h1></body></html>";
-	std::string response = client.get_request().get_response();
+	std::string response = client.get_request().response_obj.get_raw_response();
 	// std::cout << response << std::endl;
 	// log("Sending to socket: " + itoa(client.get_socket_fd()), WARNING);
 	int bytes_sent = send(client.get_socket_fd(), response.c_str(), response.length(), 0);

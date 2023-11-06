@@ -1,7 +1,23 @@
 #include "../includes/Request.hpp"
+#include <sstream>
+#include <string>
+#include <sys/_types/_size_t.h>
 
 Request::Request()
 {
+	error_pages[400] = " Bad Request";
+	error_pages[401] = " Unauthorized";
+	error_pages[403] = " Forbidden";
+	error_pages[404] = " Not Found";
+	error_pages[405] = " Method Not Allowed";
+	error_pages[413] = " Payload Too Large";
+	error_pages[414] = " URI Too Long";
+	error_pages[500] = " Internal Server Error";
+	error_pages[501] = " Not Implemented";
+	error_pages[505] = " HTTP Version Not Supported";
+	error_pages[507] = " Insufficient Storage";
+	error_pages[510] = " Not Extended";
+	error_pages[511] = " Network Authentication Required";
 }
 
 Request::~Request()
@@ -26,11 +42,78 @@ Request &Request::operator=(Request const &obj)
 Request::Request(std::string request_buff)
 {
 	this->request_buff = request_buff;
+	
+
+	
 }
 
-void Request::parse_request()
+void Request::set_request_buff(std::string request_buff)
+{
+	this->request_buff = request_buff;
+}
+
+std::string Request::get_response()
+{
+	return response;
+}
+
+void Request::fill_info()
+{
+	std::stringstream ss(request_buff);
+	std::string line;
+	while(std::getline(ss, line))
+	{
+		if(line.find("HTTP/1.1") != std::string::npos)
+		{
+			method = line.substr(0, line.find(" "));
+			uri = line.substr(line.find("GET ") + 4, line.find(" HTTP/1.1") - 4);
+			protocol = "HTTP/1.1";
+		}
+		else if(line.find("Host: ") != std::string::npos)
+			host = line.substr(line.find("Host: ") + 6);
+		else if(line.find("Connection: ") != std::string::npos)
+			connection = line.substr(line.find("Connection: ") + 12);
+		else if(line.find("Cache-Control: ") != std::string::npos)
+			cache_control = line.substr(line.find("Cache-Control: ") + 15);
+		else if(line.find("User-Agent: ") != std::string::npos)
+			user_agent = line.substr(line.find("User-Agent: ") + 12);
+		else if(line.find("Accept: ") != std::string::npos)
+			accept = line.substr(line.find("Accept: ") + 8);
+		else if(line.find("Accept-Encoding: ") != std::string::npos)
+			accept_encoding = line.substr(line.find("Accept-Encoding: ") + 17);
+		else if(line.find("Accept-Language: ") != std::string::npos)
+			accept_language = line.substr(line.find("Accept-Language: ") + 17);
+		else if(line.find("Cookie: ") != std::string::npos)
+			cookie = line.substr(line.find("Cookie: ") + 8);
+		else if(line.find("Content-Length: ") != std::string::npos)
+			content_length = line.substr(line.find("Content-Length: ") + 16);
+		else if(line.find("Content-Type: ") != std::string::npos)
+			content_type = line.substr(line.find("Content-Type: ") + 14);
+		else if(line.find("Body: ") != std::string::npos)
+			body = line.substr(line.find("Body: ") + 6);
+		else if(line.find("Transfer-Encoding: ") != std::string::npos)
+			transfer_encoding = line.substr(line.find("Transfer-Encoding: ") + 19);
+	}
+}
+
+void Request::parse_request(Server_Config &config)
 {
 	// std::cout << "Request: " << request_buff << std::endl;
+	// std::cout << request_buff << std::endl;
+	fill_info();
+	
+	if(!is_req_well_formed(config))
+		return;
+	
+	
+
+	
+	
+	
+	
+	
+	
+	
 	std::string path =  request_buff.substr(request_buff.find("GET ") + 4, request_buff.find(" HTTP/1.1") - 4);
 	if(path == "/")
 		path = "/index.html";
@@ -55,14 +138,67 @@ void Request::parse_request()
 	// std::cout << "path: " << path << std::endl;
 	std::string response_body = read_file(path);
 	response.append(response_body);
+	response_obj.set_raw_response(response);
 }
 
-void Request::set_request_buff(std::string request_buff)
+int Request::is_req_well_formed(Server_Config &config)
 {
-	this->request_buff = request_buff;
+	if(!transfer_encoding.empty()  && transfer_encoding != "chunked")
+	{
+		response_obj.set_status_code(501)
+			.set_body(check_body(config, 501))
+			.set_content_type("text/html")
+			.build_raw_response();
+		return 0;
+	}
+	if(!transfer_encoding.empty() && !content_length.empty() && method == "POST")
+	{
+		response_obj.set_status_code(400)
+			.set_body(check_body(config, 400))
+			.set_content_type("text/html")
+			.build_raw_response();
+		return 0;
+	}
+	std::string charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
+	if(uri.find_first_not_of(charset) != std::string::npos)
+	{
+		response_obj.set_status_code(400)
+			.set_body(check_body(config, 400))
+			.set_content_type("text/html")
+			.build_raw_response();
+		return 0;
+	}
+	if(uri.size() > 2048)
+	{
+		response_obj.set_status_code(414)
+			.set_body(check_body(config, 414))
+			.set_content_type("text/html")
+			.build_raw_response();
+		return 0;
+	}
+	if((int)uri.size() > config.get_client_body_limit())
+	{
+		response_obj.set_status_code(413)
+			.set_body(check_body(config, 413))
+			.set_content_type("text/html")
+			.build_raw_response();
+		return 0;
+	}
+	return 1;
 }
 
-std::string Request::get_response()
+std::string Request::check_body(Server_Config &config, int error_code)
 {
-	return response;
+	for(size_t j = 0; j < config.get_error_pages().size(); j++)
+	{
+		if(config.get_error_pages()[j] == itoa(error_code))
+		{
+			std::string path = "assets/static" + config.get_error_pages()[j];
+			return read_file(path);
+		}
+	}
+
+	std::string standard = "<html><title>" + itoa(error_code) + error_pages[error_code] + "</title><body style=\"color: green;background: #000\" > \
+		<h1 style=\"text-align: center;\">ERROR: " + itoa(error_code) + error_pages[error_code] + "</h1></body></html>";
+	return standard;
 }

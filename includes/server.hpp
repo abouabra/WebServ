@@ -15,7 +15,7 @@
 class Server {
 private:
 	Server();
-
+	Config config;
 public:
 	Server(Config &config);
 	~Server();
@@ -36,7 +36,7 @@ public:
 	struct sockaddr_in set_up_addr(int port);
 	void set_up_fd_sets();
 	void run_server();
-	void accept_new_connection(int server_fd);
+	void accept_new_connection(int server_fd, int index);
 	void close_connection(Client &client, int index);
 	void set_to_non_blocking(int client_fd);
 	int check_for_timeout(Client &client, int index);
