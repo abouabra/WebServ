@@ -1,4 +1,5 @@
-#include "../includes/config.hpp"
+#include "../includes/Config.hpp"
+#include <exception>
 /*
 
 	CONFIG CLASS
@@ -28,9 +29,10 @@ Config& Config::Config::operator=(Config const &obj)
 
 Config::Config(std::string file_name)
 {
+	log("Config file: " + file_name, INFO);
 	config_file = read_config(file_name);
 
-	std::cout << config_file ;
+	// std::cout << config_file ;
 	
 	parse_config(config_file);
 }
@@ -40,7 +42,10 @@ std::string Config::read_config(std::string &config_file)
 {
 	std::fstream file(config_file.c_str(), std::ios::in);
 	if(!file.is_open())
-		throw std::runtime_error("Error: Could not open config file");
+	{
+		log("Error: Could not open config file", ERROR);
+		throw std::exception();
+	}
 	std::string content;
 	std::string line;
 
@@ -53,6 +58,12 @@ void Config::parse_config(std::string &config_file)
 {
 	(void) config_file;
 }
+
+void Config::print_config()
+{
+	
+}
+
 
 /*
 

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
-
+#include "Utils.hpp"
 class Routes {
 private:
 	std::string path;
@@ -37,6 +37,7 @@ public:
 	Routes &set_upload_enabled(bool upload_enabled);
 	Routes &set_upload_directory(std::string upload_directory);
 	Routes &set_cgi_bin(std::string cgi_bin);
+
 };
 
 class Server_Config {
@@ -79,4 +80,5 @@ public:
 	std::string read_config(std::string &file_name);
 	void parse_config(std::string &config_file);
 	std::vector<Server_Config> servers;
+	void print_config();
 };

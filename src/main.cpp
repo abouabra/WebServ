@@ -1,9 +1,11 @@
-#include "../includes/config.hpp"
+#include "../includes/Config.hpp"
+#include "../includes/Utils.hpp"
+#include "../includes/Server.hpp"
 
 int main(int ac, char **av)
 {
 	std::string file_name;
-
+	
 	if(ac > 2)
 	{
 		std::cout << "Usage: ./webserv <config_file>" << std::endl;
@@ -16,6 +18,22 @@ int main(int ac, char **av)
 	try
 	{
 		Config config(file_name);
+		config.print_config();
+
+		Server_Config server_1;
+		server_1.set_port(2003);
+		config.servers.push_back(server_1);
+
+		Server_Config server_2;
+		server_2.set_port(2004);
+		config.servers.push_back(server_2);
+
+
+		Server_Config server_3;
+		server_3.set_port(2005);
+		config.servers.push_back(server_3);
+
+		Server server(config);
 	}
 	catch(const std::exception& e)
 	{
