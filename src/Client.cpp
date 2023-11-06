@@ -66,13 +66,3 @@ void Client::set_request(std::string request)
 {
 	this->request.set_request_buff(request);
 }
-
-void Client::set_response(std::string response)
-{
-	this->response.set_response_buff(response);
-}
-
-Response &Client::get_response()
-{
-	return response;
-}

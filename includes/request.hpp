@@ -5,7 +5,10 @@
 class Request {
 private:
 	std::string request_buff;
-	std::string result;
+	std::string method;
+	std::string uri;
+	std::string http_version;
+	std::string response;
 public:
 	Request();
 	Request(std::string request_buff);
@@ -14,6 +17,6 @@ public:
 	Request &operator=(Request const &obj);
 
 	void parse_request();
-	std::string get_request_buff();
 	void set_request_buff(std::string request_buff);
+	std::string get_response();
 };

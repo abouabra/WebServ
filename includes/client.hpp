@@ -17,7 +17,6 @@ private:
 	int timeout;
 	struct sockaddr_in client_addr; 
 	Request	request;
-	Response response;
 public:
 	Client(int socket_fd, struct sockaddr_in addr);
 	~Client();
@@ -33,7 +32,4 @@ public:
 
 	Request &get_request();
 	void set_request(std::string buffer);
-
-	Response &get_response();
-	void set_response(std::string buffer);
 };

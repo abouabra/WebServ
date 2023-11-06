@@ -18,7 +18,7 @@ Request &Request::operator=(Request const &obj)
 	if (this != &obj)
 	{
 		request_buff = obj.request_buff;
-		result = obj.result;
+		response = obj.response;
 	}
 	return *this;
 }
@@ -50,11 +50,11 @@ void Request::parse_request()
 	else
 		mime_type = "text/plain";
 
-	result = "HTTP/1.1 200 OK\r\nContent-Type: "+mime_type+"\r\n\r\n";
+	response = "HTTP/1.1 200 OK\r\nContent-Type: "+mime_type+"\r\n\r\n";
 	path = "assets/static" + path;
 	// std::cout << "path: " << path << std::endl;
 	std::string response_body = read_file(path);
-	result.append(response_body);
+	response.append(response_body);
 }
 
 void Request::set_request_buff(std::string request_buff)
@@ -62,7 +62,7 @@ void Request::set_request_buff(std::string request_buff)
 	this->request_buff = request_buff;
 }
 
-std::string Request::get_request_buff()
+std::string Request::get_response()
 {
-	return result;
+	return response;
 }

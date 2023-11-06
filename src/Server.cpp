@@ -218,10 +218,8 @@ int Server::read_from_client(Client &client, int i)
 	FD_SET(client.get_socket_fd(), &writes);
 	// FD_CLR(client.get_socket_fd(), &reads);
 
-	// Request req(buffer);
 	client.set_request(buffer);
 	client.get_request().parse_request();
-	client.set_response(client.get_request().get_request_buff());
 	return 0;
 }
 
@@ -229,7 +227,7 @@ int Server::write_to_client(Client &client, int index)
 {
 	client.set_timer(time(NULL));
 	// std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Hello, World!</h1></body></html>";
-	std::string response = client.get_response().get_response_buff();
+	std::string response = client.get_request().get_response();
 	// std::cout << response << std::endl;
 	// log("Sending to socket: " + itoa(client.get_socket_fd()), WARNING);
 	int bytes_sent = send(client.get_socket_fd(), response.c_str(), response.length(), 0);
