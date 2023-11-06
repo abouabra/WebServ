@@ -2,7 +2,7 @@
 
 int main(int ac, char **av)
 {
-	std::string config_file;
+	std::string file_name;
 
 	if(ac > 2)
 	{
@@ -10,12 +10,12 @@ int main(int ac, char **av)
 		return 1;
 	}
 	if(ac == 2)
-		config_file = av[1];
+		file_name = av[1];
 	else
-		config_file = "config/default.conf";
+		file_name = "config/default.conf";
 	try
 	{
-		Config config(config_file);
+		Config config(file_name);
 	}
 	catch(const std::exception& e)
 	{
