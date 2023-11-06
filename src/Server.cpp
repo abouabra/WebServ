@@ -1,5 +1,6 @@
 #include "../includes/Server.hpp"
 #include "../includes/Utils.hpp"
+#include <unistd.h>
 
 /*
 
@@ -78,7 +79,7 @@ int Server::set_up_server(Server_Config &config)
 	status = listen(server_fd, 1024);
 	guard(status, "Error listening on socket");
 
-	log("listening on " + config.get_host() + ":" + itoa(config.get_port()), INFO);
+	log("listening on 0.0.0.0:" + itoa(config.get_port()), INFO);
 	if(server_fd > max_fd)
 		max_fd = server_fd;
 
@@ -105,7 +106,7 @@ void Server::run_server()
 	while(true)
 	{
 		reads = master;
-		int status = select(1024, &reads, &writes, NULL, &timeout);
+		int status = select(max_fd + 1, &reads, &writes, NULL, &timeout);
 		if(status == -1)
 		{
 			log("Error selecting", ERROR);
@@ -160,7 +161,8 @@ void Server::run_server()
 			}
 		}
 	}
-} 
+}
+
 void Server::set_to_non_blocking(int client_fd)
 {
 	int status = fcntl(client_fd, F_GETFL, 0);
