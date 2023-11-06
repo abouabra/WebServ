@@ -124,40 +124,19 @@ void Server::run_server()
 		for(size_t i = 0; i < clients.size(); i++)
 		{
 
-			if(time(NULL) - clients[i].get_timeout() > 5)
-			{
-				close_connection(clients[i], i);
+			if(check_for_timeout(clients[i], i))
 				continue;
-			}
 
 			if(FD_ISSET(clients[i].get_socket_fd(), &reads))
 			{
-				clients[i].set_timer(time(NULL));
-				int size = 1024;
-				char buffer[size];
-				std::memset(buffer, 0, sizeof(buffer));
-
-				// log("Reading from socket: " + itoa(clients[i].get_socket_fd()), WARNING);
-				int bytes_read = recv(clients[i].get_socket_fd(), buffer, size, 0);
-				if(bytes_read == -1)
+				if(read_from_client(clients[i], i))
 					continue;
-				if(bytes_read == 0)
-				{
-					close_connection(clients[i], i);
-					continue;
-				}
-				FD_SET(clients[i].get_socket_fd(), &writes);
-				// std::cout << buffer << std::endl;
 			}
 			if(FD_ISSET(clients[i].get_socket_fd(), &writes))
 			{
-				clients[i].set_timer(time(NULL));
-				std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Hello, World!</h1></body></html>";
-				// log("Sending to socket: " + itoa(clients[i].get_socket_fd()), WARNING);
-				int bytes_sent = send(clients[i].get_socket_fd(), response.c_str(), response.length(), 0);
-				if(bytes_sent == -1)
+				if(write_to_client(clients[i], i))
 					continue;
-				close_connection(clients[i], i);
+				
 			}
 		}
 	}
@@ -208,4 +187,54 @@ void Server::close_connection(Client &client, int index)
 	close(client.get_socket_fd());
 	clients.erase(clients.begin() + index);
 	log("Closing connection on: " + itoa(client.get_socket_fd()), INFO);
+}
+
+int Server::check_for_timeout(Client &client, int index)
+{
+	if(time(NULL) - client.get_timeout() > 5)
+	{
+		close_connection(client, index);
+		return 1;
+	}
+	return 0;
+}
+
+int Server::read_from_client(Client &client, int i)
+{
+	client.set_timer(time(NULL));
+	int size = 1024;
+	char buffer[size];
+	std::memset(buffer, 0, sizeof(buffer));
+
+	// log("Reading from socket: " + itoa(client.get_socket_fd()), WARNING);
+	int bytes_read = recv(client.get_socket_fd(), buffer, size, 0);
+	if(bytes_read == -1)
+		return 1;
+	if(bytes_read == 0)
+	{
+		close_connection(client, i);
+		return 1;
+	}
+	FD_SET(client.get_socket_fd(), &writes);
+	// FD_CLR(client.get_socket_fd(), &reads);
+
+	// Request req(buffer);
+	client.set_request(buffer);
+	client.get_request().parse_request();
+	client.set_response(client.get_request().get_request_buff());
+	return 0;
+}
+
+int Server::write_to_client(Client &client, int index)
+{
+	client.set_timer(time(NULL));
+	// std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Hello, World!</h1></body></html>";
+	std::string response = client.get_response().get_response_buff();
+	// std::cout << response << std::endl;
+	// log("Sending to socket: " + itoa(client.get_socket_fd()), WARNING);
+	int bytes_sent = send(client.get_socket_fd(), response.c_str(), response.length(), 0);
+	if(bytes_sent == -1)
+		return 1;
+	close_connection(client, index);
+	return 0;
 }

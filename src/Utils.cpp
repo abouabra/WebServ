@@ -36,3 +36,15 @@ std::string itoa(int i)
 	ss << i;
 	return ss.str();
 }
+
+std::string read_file(std::string name)
+{
+	std::fstream file(name.c_str(), std::ios::in);
+	std::string content;
+	std::string line;
+
+
+	while(std::getline(file, line))
+		content += line + "\n";
+	return content;
+}

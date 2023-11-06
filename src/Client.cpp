@@ -51,3 +51,28 @@ Client &Client::set_timer(int timeout)
 	this->timeout = timeout;
 	return *this;
 }
+
+struct sockaddr_in Client::get_client_addr()
+{
+	return client_addr;
+}
+
+Request &Client::get_request()
+{
+	return request;
+}
+
+void Client::set_request(std::string request)
+{
+	this->request.set_request_buff(request);
+}
+
+void Client::set_response(std::string response)
+{
+	this->response.set_response_buff(response);
+}
+
+Response &Client::get_response()
+{
+	return response;
+}

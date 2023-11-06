@@ -39,5 +39,7 @@ public:
 	void accept_new_connection(int server_fd);
 	void close_connection(Client &client, int index);
 	void set_to_non_blocking(int client_fd);
-
+	int check_for_timeout(Client &client, int index);
+	int read_from_client(Client &client, int index);
+	int write_to_client(Client &client, int index);
 };

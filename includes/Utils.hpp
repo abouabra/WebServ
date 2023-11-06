@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 #include <sstream>
+#include <fstream>
 
 enum log_level
 {
@@ -16,3 +17,5 @@ void log(std::string message, int level);
 void guard(int status, std::string message);
 
 std::string itoa(int i);
+
+std::string read_file(std::string name);

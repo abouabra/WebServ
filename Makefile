@@ -1,4 +1,4 @@
-SRC = main.cpp Config.cpp Utils.cpp Server.cpp Client.cpp
+SRC = main.cpp Config.cpp Utils.cpp Server.cpp Client.cpp Request.cpp Response.cpp
 
 SRC_DIR = src/
 OBJ_DIR = obj/
