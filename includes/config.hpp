@@ -77,8 +77,11 @@ public:
 	Config(Config const &src);
 	Config &operator=(Config const &obj);
 
+
+	std::vector<Server_Config> servers;
+
+
 	std::string read_config(std::string &file_name);
 	void parse_config(std::string &config_file);
-	std::vector<Server_Config> servers;
 	void print_config();
 };
