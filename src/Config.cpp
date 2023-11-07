@@ -3,6 +3,7 @@
 #include <exception>
 #include <sstream>
 #include <string>
+#include <sys/_types/_size_t.h>
 /*
 
 	CONFIG CLASS
@@ -197,14 +198,37 @@ void Config::parse_config(std::string &config_file)
 			get_server_config(line, i);
 		if (i == 2)
 			get_server_route(line, i);
-
 	}
 
 }
 
 void Config::print_config()
 {
-	
+	for(size_t i = 0; i< servers.size(); i++)
+	{
+		std::cout << "Server " << i << std::endl;
+		std::cout << "port: " << servers[i].get_port() << std::endl;
+		std::cout << "host: " << servers[i].get_host() << std::endl;
+		std::cout << "error_pages: ";
+		for(size_t j = 0; j < servers[i].get_error_pages().size(); j++)
+			std::cout << servers[i].get_error_pages()[j] << " ";
+		std::cout << std::endl;
+		std::cout << "client_body_limit: " << servers[i].get_client_body_limit() << std::endl;
+		std::cout << "routes: " << std::endl;
+		for(size_t j = 0; j < servers[i].get_routes().size(); j++)
+		{
+			std::cout << "\tpath: " << servers[i].get_routes()[j].get_path() << std::endl;
+			std::cout << "\tdefault_file: " << servers[i].get_routes()[j].get_default_file() << std::endl;
+			std::cout << "\tmethods: ";
+			for(size_t k = 0; k < servers[i].get_routes()[j].get_methods().size(); k++)
+				std::cout << servers[i].get_routes()[j].get_methods()[k] << " ";
+			std::cout << std::endl;
+			std::cout << "\tdirectory_listing: " << servers[i].get_routes()[j].get_directory_listing() << std::endl;
+			std::cout << "\tupload_enabled: " << servers[i].get_routes()[j].get_upload_enabled() << std::endl;
+			std::cout << "\tupload_directory: " << servers[i].get_routes()[j].get_upload_directory() << std::endl;
+			std::cout << "\tcgi_bin: " << servers[i].get_routes()[j].get_cgi_bin() << std::endl;
+		}
+	}
 }
 
 
@@ -409,5 +433,16 @@ Routes& Routes::set_upload_directory(std::string upload_directory)
 Routes& Routes::set_cgi_bin(std::string cgi_bin)
 {
 	this->cgi_bin = cgi_bin;
+	return *this;
+}
+
+std::string Routes::get_redirect_url()
+{
+	return redirect_url;
+}
+
+Routes& Routes::set_redirect_url(std::string redirect_url)
+{
+	this->redirect_url = redirect_url;
 	return *this;
 }

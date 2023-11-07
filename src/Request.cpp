@@ -44,19 +44,19 @@ Request::Request(std::string request_buff)
 {
 	this->request_buff = request_buff;
 
-	error_pages[400] = " Bad Request";
-	error_pages[401] = " Unauthorized";
-	error_pages[403] = " Forbidden";
-	error_pages[404] = " Not Found";
-	error_pages[405] = " Method Not Allowed";
-	error_pages[413] = " Payload Too Large";
-	error_pages[414] = " URI Too Long";
-	error_pages[500] = " Internal Server Error";
-	error_pages[501] = " Not Implemented";
-	error_pages[505] = " HTTP Version Not Supported";
-	error_pages[507] = " Insufficient Storage";
-	error_pages[510] = " Not Extended";
-	error_pages[511] = " Network Authentication Required";
+	error_pages["400"] = " Bad Request";
+	error_pages["401"] = " Unauthorized";
+	error_pages["403"] = " Forbidden";
+	error_pages["404"] = " Not Found";
+	error_pages["405"] = " Method Not Allowed";
+	error_pages["413"] = " Payload Too Large";
+	error_pages["414"] = " URI Too Long";
+	error_pages["500"] = " Internal Server Error";
+	error_pages["501"] = " Not Implemented";
+	error_pages["505"] = " HTTP Version Not Supported";
+	error_pages["507"] = " Insufficient Storage";
+	error_pages["510"] = " Not Extended";
+	error_pages["511"] = " Network Authentication Required";
 }
 
 void Request::set_server_config(Server_Config config)
@@ -121,13 +121,16 @@ void Request::fill_info()
 void Request::parse_request()
 {
 	// std::cout << "Request: " << request_buff << std::endl;
+	int index;
+
 	fill_info();
-	
 	if(!is_req_well_formed())
 		return;
-	if(get_matched_location_for_request_uri() == -1)
+	index = get_matched_location_for_request_uri();
+	if(index == -1)
 		return;
-
+	if(!is_location_have_redirection(index))
+		return;
 	
 	
 	
@@ -162,82 +165,83 @@ void Request::parse_request()
 	response.set_raw_response(res);
 }
 
-int Request::is_req_well_formed()
+bool Request::is_req_well_formed()
 {
-	if(!transfer_encoding.empty()  && transfer_encoding != "chunked")
-	{
-		response.set_status_code(501)
-			.set_body(check_body(501))
-			.set_content_type("text/html")
-			.build_raw_response();
-		return 0;
-	}
-	if(!transfer_encoding.empty() && !content_length.empty() && method == "POST")
-	{
-		response.set_status_code(400)
-			.set_body(check_body(400))
-			.set_content_type("text/html")
-			.build_raw_response();
-		return 0;
-	}
+	int status = 0;
 	std::string charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
 	// std::string charset = "ABC";
+
+	if(!transfer_encoding.empty()  && transfer_encoding != "chunked")
+		status = 501;
+	if(!transfer_encoding.empty() && !content_length.empty() && method == "POST")
+		status = 400;
 	if(uri.find_first_not_of(charset) != std::string::npos)
-	{
-		response.set_status_code(400)
-			.set_body(check_body(400))
-			.set_content_type("text/html")
-			.build_raw_response();
-		return 0;
-	}
+		status = 400;
 	if(uri.size() > 2048)
-	{
-		response.set_status_code(414)
-			.set_body(check_body(414))
-			.set_content_type("text/html")
-			.build_raw_response();
-		return 0;
-	}
+		status = 414;
 	if((int)uri.size() > server_config.get_client_body_limit())
+		status = 413;
+	
+	if(status)
 	{
-		response.set_status_code(413)
-			.set_body(check_body(413))
+		response.set_status_code(status)
+			.set_body(check_body( "assets/static/error_pages/" + itoa(status) + ".html"))
 			.set_content_type("text/html")
 			.build_raw_response();
-		return 0;
+		return false;
 	}
-	return 1;
+	return true;
 }
 
-std::string Request::check_body(int error_code)
+std::string Request::check_body(std::string path)
 {
+	std::string error_code = path.substr(path.find_last_of("/") + 1);
 	for(size_t j = 0; j < server_config.get_error_pages().size(); j++)
 	{
-		if(server_config.get_error_pages()[j] == itoa(error_code))
+		if(server_config.get_error_pages()[j] == error_code)
 		{
-			std::string path = "assets/static" + server_config.get_error_pages()[j];
 			return read_file(path);
 		}
 	}
 
-	std::string standard = "<html><title>" + itoa(error_code) + error_pages[error_code] + "</title><body style=\"color: green;background: #000\" ><h1 style=\"text-align: center;\">ERROR: " + itoa(error_code) + error_pages[error_code] + "</h1></body></html>";
+	std::string standard = "<html><title>" + error_code + error_pages[error_code] + "</title><body style=\"color: green;background: #000\" ><h1 style=\"text-align: center;\">ERROR: " + error_code + error_pages[error_code] + "</h1></body></html>";
 	return standard;
 }
 
 
 int Request::get_matched_location_for_request_uri()
 {
-	// std::cout << "uri: " << uri << std::endl;
-	// std::cout << "size: " << server_config.get_routes().size() << std::endl;
+	std::string location;
+
+	location = uri.substr(0, uri.find_last_of("/"));
+	if(location.empty())
+		location = "/";
+
 	for(size_t i = 0; i < server_config.get_routes().size(); i++)
 	{
-		if(uri.find(server_config.get_routes()[i].get_path()) != std::string::npos)
+		if(location == server_config.get_routes()[i].get_path())
 			return i;
 	}
 
 	response.set_status_code(404)
-		.set_body(check_body(404))
+		.set_body(check_body( "assets/static/error_pages/" + itoa(404) + ".html"))
 		.set_content_type("text/html")
 		.build_raw_response();
 	return -1;
+}
+
+bool Request::is_location_have_redirection(int index)
+{
+	std::string redirect_url = server_config.get_routes()[index].get_redirect_url();
+	redirect_url.substr(0, redirect_url.find_last_of("/"));
+	std::string total = server_config.get_routes()[index].get_path() + "/" + redirect_url;
+	if(!redirect_url.empty())
+	{
+		response.set_status_code(301)
+			.set_body(read_file(total))
+			.set_content_type("text/html")
+			.build_raw_response();
+		return false;
+	}
+	return true;
 }

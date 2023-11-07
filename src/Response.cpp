@@ -31,7 +31,6 @@ Response& Response::build_raw_response()
 	this->raw_response += "Content-Length: " + itoa(this->body.length()) + "\r\n";
 	this->raw_response += "\r\n";
 	this->raw_response += this->body;
-	std::cout << "responce: " << this->raw_response << std::endl;
 	return *this;
 }
 

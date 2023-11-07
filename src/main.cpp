@@ -21,6 +21,10 @@ int main(int ac, char **av)
 		// config.print_config();
 
 		Server_Config server_1;
+		std::vector<std::string> error_pages;
+		error_pages.push_back("404.html");
+		error_pages.push_back("500.html");
+		server_1.set_error_pages(error_pages);
 		Routes route_1;
 		route_1.set_path("/");
 		route_1.set_default_file("index.html");

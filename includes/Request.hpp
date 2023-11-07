@@ -27,7 +27,7 @@ private:
 	std::string content_type;
 	std::string body;
 
-	std::map<int , std::string> error_pages;
+	std::map<std::string , std::string> error_pages;
 
 	Server_Config server_config;
 	Response response;
@@ -49,8 +49,9 @@ public:
 	void fill_info();
 
 	
-	std::string check_body(int error_code);
+	std::string check_body(std::string);
 
-	int is_req_well_formed();
+	bool is_req_well_formed();
 	int get_matched_location_for_request_uri();
+	bool is_location_have_redirection(int index);
 };
