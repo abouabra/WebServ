@@ -3,9 +3,12 @@
 #include <sstream>
 #include <string>
 
+Request::Request()
+{
+
+}
 Request::~Request()
 {
-	// delete response;
 }
 
 Request::Request(Request const &src): server_config(src.server_config), response(src.response)
@@ -18,7 +21,21 @@ Request &Request::operator=(Request const &obj)
 	if (this != &obj)
 	{
 		request_buff = obj.request_buff;
-		// response = obj.response;
+		method = obj.method;
+		uri = obj.uri;
+		protocol = obj.protocol;
+		host = obj.host;
+		connection = obj.connection;
+		cache_control = obj.cache_control;
+		user_agent = obj.user_agent;
+		accept = obj.accept;
+		accept_encoding = obj.accept_encoding;
+		accept_language = obj.accept_language;
+		cookie = obj.cookie;
+		content_length = obj.content_length;
+		content_type = obj.content_type;
+		body = obj.body;
+		transfer_encoding = obj.transfer_encoding;
 	}
 	return *this;
 }
@@ -26,8 +43,6 @@ Request &Request::operator=(Request const &obj)
 Request::Request(std::string request_buff)
 {
 	this->request_buff = request_buff;
-	response = NULL;
-	server_config = NULL;
 
 	error_pages[400] = " Bad Request";
 	error_pages[401] = " Unauthorized";
@@ -44,19 +59,14 @@ Request::Request(std::string request_buff)
 	error_pages[511] = " Network Authentication Required";
 }
 
-void Request::set_response(Response *response)
-{
-	this->response = response;
-}
-
-Response *Request::get_response()
-{
-	return response;
-}
-
-void Request::set_server_config(Server_Config *config)
+void Request::set_server_config(Server_Config config)
 {
 	server_config = config;
+}
+
+Response& Request::get_response()
+{
+	return response;
 }
 
 void Request::set_request_buff(std::string request_buff)
@@ -64,12 +74,7 @@ void Request::set_request_buff(std::string request_buff)
 	this->request_buff = request_buff;
 }
 
-// std::string Request::get_response()
-// {
-// 	return response;
-// }
-
-Server_Config* Request::get_server_config()
+Server_Config& Request::get_server_config()
 {
 	return server_config;
 }
@@ -116,7 +121,6 @@ void Request::fill_info()
 void Request::parse_request()
 {
 	// std::cout << "Request: " << request_buff << std::endl;
-	// std::cout << request_buff << std::endl;
 	fill_info();
 	
 	if(!is_req_well_formed())
@@ -155,14 +159,14 @@ void Request::parse_request()
 	// std::cout << "path: " << path << std::endl;
 	std::string res_body = read_file(path);
 	res.append(res_body);
-	response->set_raw_response(res);
+	response.set_raw_response(res);
 }
 
 int Request::is_req_well_formed()
 {
 	if(!transfer_encoding.empty()  && transfer_encoding != "chunked")
 	{
-		response->set_status_code(501)
+		response.set_status_code(501)
 			.set_body(check_body(501))
 			.set_content_type("text/html")
 			.build_raw_response();
@@ -170,7 +174,7 @@ int Request::is_req_well_formed()
 	}
 	if(!transfer_encoding.empty() && !content_length.empty() && method == "POST")
 	{
-		response->set_status_code(400)
+		response.set_status_code(400)
 			.set_body(check_body(400))
 			.set_content_type("text/html")
 			.build_raw_response();
@@ -180,7 +184,7 @@ int Request::is_req_well_formed()
 	// std::string charset = "ABC";
 	if(uri.find_first_not_of(charset) != std::string::npos)
 	{
-		response->set_status_code(400)
+		response.set_status_code(400)
 			.set_body(check_body(400))
 			.set_content_type("text/html")
 			.build_raw_response();
@@ -188,15 +192,15 @@ int Request::is_req_well_formed()
 	}
 	if(uri.size() > 2048)
 	{
-		response->set_status_code(414)
+		response.set_status_code(414)
 			.set_body(check_body(414))
 			.set_content_type("text/html")
 			.build_raw_response();
 		return 0;
 	}
-	if((int)uri.size() > server_config->get_client_body_limit())
+	if((int)uri.size() > server_config.get_client_body_limit())
 	{
-		response->set_status_code(413)
+		response.set_status_code(413)
 			.set_body(check_body(413))
 			.set_content_type("text/html")
 			.build_raw_response();
@@ -207,11 +211,11 @@ int Request::is_req_well_formed()
 
 std::string Request::check_body(int error_code)
 {
-	for(size_t j = 0; j < server_config->get_error_pages().size(); j++)
+	for(size_t j = 0; j < server_config.get_error_pages().size(); j++)
 	{
-		if(server_config->get_error_pages()[j] == itoa(error_code))
+		if(server_config.get_error_pages()[j] == itoa(error_code))
 		{
-			std::string path = "assets/static" + server_config->get_error_pages()[j];
+			std::string path = "assets/static" + server_config.get_error_pages()[j];
 			return read_file(path);
 		}
 	}
@@ -224,14 +228,14 @@ std::string Request::check_body(int error_code)
 int Request::get_matched_location_for_request_uri()
 {
 	// std::cout << "uri: " << uri << std::endl;
-	// std::cout << "size: " << server_config->get_routes().size() << std::endl;
-	for(size_t i = 0; i < server_config->get_routes().size(); i++)
+	// std::cout << "size: " << server_config.get_routes().size() << std::endl;
+	for(size_t i = 0; i < server_config.get_routes().size(); i++)
 	{
-		if(uri.find(server_config->get_routes()[i].get_path()) != std::string::npos)
+		if(uri.find(server_config.get_routes()[i].get_path()) != std::string::npos)
 			return i;
 	}
 
-	response->set_status_code(404)
+	response.set_status_code(404)
 		.set_body(check_body(404))
 		.set_content_type("text/html")
 		.build_raw_response();

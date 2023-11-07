@@ -14,9 +14,9 @@
 
 class Server {
 private:
-	Config &conf;
+	Config conf;
 public:
-	Server(Config &config);
+	Server(Config config);
 	~Server();
 	Server(Server const &src);
 	Server &operator=(Server const &obj);

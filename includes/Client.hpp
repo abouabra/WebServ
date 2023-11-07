@@ -14,10 +14,10 @@ class Client {
 private:
 	int socket_fd;
 	int timeout;
-	// int server_index;
-	Server_Config *server_config;
 	struct sockaddr_in client_addr; 
-	Request	*request;
+
+	Server_Config server_config;
+	Request	request;
 public:
 	Client(int socket_fd, struct sockaddr_in addr);
 	~Client();
@@ -27,13 +27,12 @@ public:
 	int get_socket_fd();
 	int get_timeout();
 
-	void set_server_config(Server_Config &config);
-	Server_Config *get_server_config();
+	void set_server_config(Server_Config config);
+	Server_Config get_server_config();
 	
 	struct sockaddr_in get_client_addr();
 	int get_port();
 	Client &set_timer(int timeout);
 
-	Request *get_request();
-	void set_request(Request *request);
+	Request &get_request();
 };

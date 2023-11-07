@@ -9,7 +9,7 @@
 
 */
 
-Server::Server(Config &config): conf(config)
+Server::Server(Config config): conf(config)
 {
 	max_fd = 0;
 	for(size_t i = 0;i < config.servers.size(); i++)
@@ -221,12 +221,10 @@ int Server::read_from_client(Client &client, int i)
 			break;
 	}
 
-	Request *request = new Request(total);
-	Response *response = new Response;
-	client.set_request(request);
-	request->set_server_config(client.get_server_config());
-	request->set_response(response);
-	request->parse_request();
+
+	client.get_request().set_request_buff(total);
+	client.get_request().set_server_config(client.get_server_config());
+	client.get_request().parse_request();
 
 	// std::cout << "after build: \n" << request.get_response()->get_raw_response() << "\nClock: " << clock() << std::endl;
 	FD_CLR(client.get_socket_fd(), &master);
@@ -237,8 +235,7 @@ int Server::read_from_client(Client &client, int i)
 int Server::write_to_client(Client &client, int index)
 {
 	client.set_timer(time(NULL));
-	// client.get_request()->get_response()->build_raw_response();
-	std::string response_body = client.get_request()->get_response()->get_raw_response();
+	std::string response_body = client.get_request().get_response().get_raw_response();
 	// std::cout << "Before sending: \n" << response_body << "\nClock: " << clock() << std::endl;
 	log("Sending to socket: " + itoa(client.get_socket_fd()), WARNING);
 	int bytes_sent = send(client.get_socket_fd(), response_body.c_str(), response_body.length(), 0);
