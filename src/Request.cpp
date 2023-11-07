@@ -1,7 +1,6 @@
 #include "../includes/Request.hpp"
 #include <sstream>
 #include <string>
-#include <sys/_types/_size_t.h>
 
 Request::Request()
 {
