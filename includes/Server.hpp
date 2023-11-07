@@ -14,8 +14,7 @@
 
 class Server {
 private:
-	Server();
-	Config config;
+	Config &conf;
 public:
 	Server(Config &config);
 	~Server();

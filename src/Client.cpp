@@ -1,17 +1,12 @@
 #include "../includes/Client.hpp"
+#include <cstddef>
 #include <iostream>
-
-
-
-Client::Client()
-{
-}
 
 Client::~Client()
 {
 }
 
-Client::Client(Client const &src)
+Client::Client(Client const &src): server_config(src.server_config)
 {
 	*this = src;
 }
@@ -27,12 +22,13 @@ Client &Client::operator=(Client const &obj)
 	return *this;
 }
 
-Client::Client(int socket_fd, struct sockaddr_in addr, int index)
+Client::Client(int socket_fd, struct sockaddr_in addr)
 {
 	this->socket_fd = socket_fd;
 	client_addr = addr;
-	server_index = index;
 	timeout = 0;
+	server_config = NULL;
+	request = NULL;
 }
 
 int Client::get_port()
@@ -50,10 +46,17 @@ int Client::get_timeout()
 	return timeout;
 }
 
-int Client::get_server_index()
+void Client::set_server_config(Server_Config &config)
 {
-	return server_index;
+	server_config = &config;
 }
+
+Server_Config *Client::get_server_config()
+{
+	return server_config;
+}
+
+
 Client &Client::set_timer(int timeout)
 {
 	this->timeout = timeout;
@@ -67,10 +70,10 @@ struct sockaddr_in Client::get_client_addr()
 
 Request &Client::get_request()
 {
-	return request;
+	return *request;
 }
 
 void Client::set_request(Request &request)
 {
-	this->request = request;
+	this->request = &request;
 }

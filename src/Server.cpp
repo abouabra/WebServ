@@ -8,12 +8,7 @@
 
 */
 
-Server::Server(): config(Config("config/default.conf"))
-{
-	
-}
-
-Server::Server(Config &config) : config(config)
+Server::Server(Config &config): conf(config)
 {
 	max_fd = 0;
 	for(size_t i = 0;i < config.servers.size(); i++)
@@ -31,7 +26,7 @@ Server::~Server()
 	
 }
 
-Server::Server(Server const &src): config(src.config)
+Server::Server(Server const &src): conf(src.conf)
 {
 	*this = src;
 }
@@ -174,7 +169,8 @@ void Server::accept_new_connection(int server_fd, int index)
 	FD_SET(client_fd, &master);
 	FD_SET(client_fd, &reads);
 	
-	Client client(client_fd, client_addr, index);
+	Client client(client_fd, client_addr);
+	client.set_server_config(conf.servers[index]);
 	client.set_timer(time(NULL));
 	clients.push_back(client);
 	log("New connection on: " + itoa(client_fd), INFO);
@@ -218,17 +214,18 @@ int Server::read_from_client(Client &client, int i)
 	FD_SET(client.get_socket_fd(), &writes);
 	// FD_CLR(client.get_socket_fd(), &reads);
 	Request request(buffer);
+	Response response;
 	client.set_request(request);
-	client.get_request().parse_request(config.servers[client.get_server_index()]);
+	request.set_server_config(client.get_server_config());
+	request.set_response_obj(&response);
+	request.parse_request();
 	return 0;
 }
 
 int Server::write_to_client(Client &client, int index)
 {
 	client.set_timer(time(NULL));
-	// std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Hello, World!</h1></body></html>";
-	std::string response = client.get_request().response_obj.get_raw_response();
-	// std::cout << response << std::endl;
+	std::string response = client.get_request().response_obj->get_raw_response();
 	// log("Sending to socket: " + itoa(client.get_socket_fd()), WARNING);
 	int bytes_sent = send(client.get_socket_fd(), response.c_str(), response.length(), 0);
 	if(bytes_sent == -1)

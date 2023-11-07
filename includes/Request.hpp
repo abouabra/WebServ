@@ -29,21 +29,29 @@ private:
 
 	std::string response;
 	std::map<int , std::string> error_pages;
+
+	Server_Config *server_config;
+
 public:
-	Request();
 	Request(std::string request_buff);
 	~Request();
 	Request(Request const &src);
 	Request &operator=(Request const &obj);
+	
+	void set_server_config(Server_Config *config);
+	Server_Config &get_server_config();
 
-	void parse_request(Server_Config &config);
+	void parse_request();
 	void set_request_buff(std::string request_buff);
 	std::string get_response();
 	void fill_info();
 
-	int is_req_well_formed(Server_Config &config);
-	Response response_obj;
-
-	std::string check_body(Server_Config &config , int error_code);
+	int is_req_well_formed();
+	
+	Response *response_obj;
+	void set_response_obj(Response *response_obj);
+	Response *get_response_obj();
+	
+	std::string check_body(int error_code);
 	// Config config;
 };

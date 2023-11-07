@@ -190,7 +190,7 @@ void Config::parse_config(std::string &config_file)
 		end = line.find_last_not_of(" \t");
 		if (end != std::string::npos)
 			line.erase(end + 1);
-		std::cout << '|' <<line << '|' <<std::endl;
+		// std::cout << '|' <<line << '|' <<std::endl;
 		if (line == "server")
 			i = 1;
 		if (i == 1)

@@ -2,28 +2,11 @@
 #include <sstream>
 #include <string>
 
-Request::Request()
-{
-	error_pages[400] = " Bad Request";
-	error_pages[401] = " Unauthorized";
-	error_pages[403] = " Forbidden";
-	error_pages[404] = " Not Found";
-	error_pages[405] = " Method Not Allowed";
-	error_pages[413] = " Payload Too Large";
-	error_pages[414] = " URI Too Long";
-	error_pages[500] = " Internal Server Error";
-	error_pages[501] = " Not Implemented";
-	error_pages[505] = " HTTP Version Not Supported";
-	error_pages[507] = " Insufficient Storage";
-	error_pages[510] = " Not Extended";
-	error_pages[511] = " Network Authentication Required";
-}
-
 Request::~Request()
 {
 }
 
-Request::Request(Request const &src)
+Request::Request(Request const &src): server_config(src.server_config), response_obj(src.response_obj)
 {
 	*this = src;
 }
@@ -41,9 +24,37 @@ Request &Request::operator=(Request const &obj)
 Request::Request(std::string request_buff)
 {
 	this->request_buff = request_buff;
-	
+	response_obj = NULL;
+	server_config = NULL;
 
-	
+	error_pages[400] = " Bad Request";
+	error_pages[401] = " Unauthorized";
+	error_pages[403] = " Forbidden";
+	error_pages[404] = " Not Found";
+	error_pages[405] = " Method Not Allowed";
+	error_pages[413] = " Payload Too Large";
+	error_pages[414] = " URI Too Long";
+	error_pages[500] = " Internal Server Error";
+	error_pages[501] = " Not Implemented";
+	error_pages[505] = " HTTP Version Not Supported";
+	error_pages[507] = " Insufficient Storage";
+	error_pages[510] = " Not Extended";
+	error_pages[511] = " Network Authentication Required";
+}
+
+void Request::set_response_obj(Response *response_obj)
+{
+	this->response_obj = response_obj;
+}
+
+Response *Request::get_response_obj()
+{
+	return response_obj;
+}
+
+void Request::set_server_config(Server_Config *config)
+{
+	server_config = config;
 }
 
 void Request::set_request_buff(std::string request_buff)
@@ -95,13 +106,13 @@ void Request::fill_info()
 	}
 }
 
-void Request::parse_request(Server_Config &config)
+void Request::parse_request()
 {
 	// std::cout << "Request: " << request_buff << std::endl;
 	// std::cout << request_buff << std::endl;
 	fill_info();
 	
-	if(!is_req_well_formed(config))
+	if(!is_req_well_formed())
 		return;
 	
 	
@@ -137,23 +148,23 @@ void Request::parse_request(Server_Config &config)
 	// std::cout << "path: " << path << std::endl;
 	std::string response_body = read_file(path);
 	response.append(response_body);
-	response_obj.set_raw_response(response);
+	response_obj->set_raw_response(response);
 }
 
-int Request::is_req_well_formed(Server_Config &config)
+int Request::is_req_well_formed()
 {
 	if(!transfer_encoding.empty()  && transfer_encoding != "chunked")
 	{
-		response_obj.set_status_code(501)
-			.set_body(check_body(config, 501))
+		response_obj->set_status_code(501)
+			.set_body(check_body(501))
 			.set_content_type("text/html")
 			.build_raw_response();
 		return 0;
 	}
 	if(!transfer_encoding.empty() && !content_length.empty() && method == "POST")
 	{
-		response_obj.set_status_code(400)
-			.set_body(check_body(config, 400))
+		response_obj->set_status_code(400)
+			.set_body(check_body(400))
 			.set_content_type("text/html")
 			.build_raw_response();
 		return 0;
@@ -161,24 +172,24 @@ int Request::is_req_well_formed(Server_Config &config)
 	std::string charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
 	if(uri.find_first_not_of(charset) != std::string::npos)
 	{
-		response_obj.set_status_code(400)
-			.set_body(check_body(config, 400))
+		response_obj->set_status_code(400)
+			.set_body(check_body(400))
 			.set_content_type("text/html")
 			.build_raw_response();
 		return 0;
 	}
 	if(uri.size() > 2048)
 	{
-		response_obj.set_status_code(414)
-			.set_body(check_body(config, 414))
+		response_obj->set_status_code(414)
+			.set_body(check_body(414))
 			.set_content_type("text/html")
 			.build_raw_response();
 		return 0;
 	}
-	if((int)uri.size() > config.get_client_body_limit())
+	if((int)uri.size() > server_config->get_client_body_limit())
 	{
-		response_obj.set_status_code(413)
-			.set_body(check_body(config, 413))
+		response_obj->set_status_code(413)
+			.set_body(check_body(413))
 			.set_content_type("text/html")
 			.build_raw_response();
 		return 0;
@@ -186,13 +197,13 @@ int Request::is_req_well_formed(Server_Config &config)
 	return 1;
 }
 
-std::string Request::check_body(Server_Config &config, int error_code)
+std::string Request::check_body(int error_code)
 {
-	for(size_t j = 0; j < config.get_error_pages().size(); j++)
+	for(size_t j = 0; j < server_config->get_error_pages().size(); j++)
 	{
-		if(config.get_error_pages()[j] == itoa(error_code))
+		if(server_config->get_error_pages()[j] == itoa(error_code))
 		{
-			std::string path = "assets/static" + config.get_error_pages()[j];
+			std::string path = "assets/static" + server_config->get_error_pages()[j];
 			return read_file(path);
 		}
 	}
