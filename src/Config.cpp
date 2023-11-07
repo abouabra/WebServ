@@ -68,7 +68,7 @@ size_t is_number(std::string &str)
 			break;
 		i++;
 	}
-	if (str.size() != i)
+	if ((int)str.size() != i)
 		return -1;
 	ss >> number;
 	return (number);
@@ -76,7 +76,7 @@ size_t is_number(std::string &str)
 
 void get_server_config(std::string line, int &i)
 {
-	int flag(0);
+	// int flag(0);
 	if (line[0] != '\t')
 		i = 0;
 	else
@@ -134,6 +134,7 @@ void get_server_config(std::string line, int &i)
 
 void get_server_route(std::string line, int &i)
 {
+	(void) i;
 	if (line[0] != '\t' || (line[1] && line[1] != '\t'))
 			throw("Invalide server_config route");
 	std::stringstream ss;
