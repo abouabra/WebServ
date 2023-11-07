@@ -50,7 +50,7 @@ int main(int ac, char **av)
 		server_3.set_client_body_limit(1024 * 1024);
 		config.servers.push_back(server_3);
 
-		Server server(config);
+		// Server server(config);
 	}
 	catch(const std::exception& e)
 	{
