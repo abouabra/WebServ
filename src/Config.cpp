@@ -37,7 +37,7 @@ Config::Config(std::string file_name)
 {
 	log("Config file: " + file_name, INFO);
 	config_file = read_config(file_name);
-	parse_config(config_file);
+	// parse_config(config_file);
 	print_config();
 }
 
