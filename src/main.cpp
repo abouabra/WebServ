@@ -21,6 +21,16 @@ int main(int ac, char **av)
 		// config.print_config();
 
 		Server_Config server_1;
+		Routes route_1;
+		route_1.set_path("/");
+		route_1.set_default_file("index.html");
+		std::vector<std::string> vs;
+		vs.push_back("GET");
+		vs.push_back("POST");
+		route_1.set_methods(vs);
+		std::vector<Routes> v;
+		v.push_back(route_1);
+		server_1.set_routes(v);
 		server_1.set_port(2003);
 		server_1.set_client_body_limit(1024 * 1024);
 		config.servers.push_back(server_1);

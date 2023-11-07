@@ -1,12 +1,14 @@
 #include "../includes/Request.hpp"
+#include <cstddef>
 #include <sstream>
 #include <string>
 
 Request::~Request()
 {
+	// delete response;
 }
 
-Request::Request(Request const &src): server_config(src.server_config), response_obj(src.response_obj)
+Request::Request(Request const &src): server_config(src.server_config), response(src.response)
 {
 	*this = src;
 }
@@ -16,7 +18,7 @@ Request &Request::operator=(Request const &obj)
 	if (this != &obj)
 	{
 		request_buff = obj.request_buff;
-		response = obj.response;
+		// response = obj.response;
 	}
 	return *this;
 }
@@ -24,7 +26,7 @@ Request &Request::operator=(Request const &obj)
 Request::Request(std::string request_buff)
 {
 	this->request_buff = request_buff;
-	response_obj = NULL;
+	response = NULL;
 	server_config = NULL;
 
 	error_pages[400] = " Bad Request";
@@ -42,14 +44,14 @@ Request::Request(std::string request_buff)
 	error_pages[511] = " Network Authentication Required";
 }
 
-void Request::set_response_obj(Response *response_obj)
+void Request::set_response(Response *response)
 {
-	this->response_obj = response_obj;
+	this->response = response;
 }
 
-Response *Request::get_response_obj()
+Response *Request::get_response()
 {
-	return response_obj;
+	return response;
 }
 
 void Request::set_server_config(Server_Config *config)
@@ -62,9 +64,14 @@ void Request::set_request_buff(std::string request_buff)
 	this->request_buff = request_buff;
 }
 
-std::string Request::get_response()
+// std::string Request::get_response()
+// {
+// 	return response;
+// }
+
+Server_Config* Request::get_server_config()
 {
-	return response;
+	return server_config;
 }
 
 void Request::fill_info()
@@ -114,8 +121,8 @@ void Request::parse_request()
 	
 	if(!is_req_well_formed())
 		return;
-	
-	
+	if(get_matched_location_for_request_uri() == -1)
+		return;
 
 	
 	
@@ -143,19 +150,19 @@ void Request::parse_request()
 	else
 		mime_type = "text/plain";
 
-	response = "HTTP/1.1 200 OK\r\nContent-Type: "+mime_type+"\r\n\r\n";
+	std::string res = "HTTP/1.1 200 OK\r\nContent-Type: "+mime_type+"\r\n\r\n";
 	path = "assets/static" + path;
 	// std::cout << "path: " << path << std::endl;
-	std::string response_body = read_file(path);
-	response.append(response_body);
-	response_obj->set_raw_response(response);
+	std::string res_body = read_file(path);
+	res.append(res_body);
+	response->set_raw_response(res);
 }
 
 int Request::is_req_well_formed()
 {
 	if(!transfer_encoding.empty()  && transfer_encoding != "chunked")
 	{
-		response_obj->set_status_code(501)
+		response->set_status_code(501)
 			.set_body(check_body(501))
 			.set_content_type("text/html")
 			.build_raw_response();
@@ -163,16 +170,17 @@ int Request::is_req_well_formed()
 	}
 	if(!transfer_encoding.empty() && !content_length.empty() && method == "POST")
 	{
-		response_obj->set_status_code(400)
+		response->set_status_code(400)
 			.set_body(check_body(400))
 			.set_content_type("text/html")
 			.build_raw_response();
 		return 0;
 	}
 	std::string charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
+	// std::string charset = "ABC";
 	if(uri.find_first_not_of(charset) != std::string::npos)
 	{
-		response_obj->set_status_code(400)
+		response->set_status_code(400)
 			.set_body(check_body(400))
 			.set_content_type("text/html")
 			.build_raw_response();
@@ -180,7 +188,7 @@ int Request::is_req_well_formed()
 	}
 	if(uri.size() > 2048)
 	{
-		response_obj->set_status_code(414)
+		response->set_status_code(414)
 			.set_body(check_body(414))
 			.set_content_type("text/html")
 			.build_raw_response();
@@ -188,7 +196,7 @@ int Request::is_req_well_formed()
 	}
 	if((int)uri.size() > server_config->get_client_body_limit())
 	{
-		response_obj->set_status_code(413)
+		response->set_status_code(413)
 			.set_body(check_body(413))
 			.set_content_type("text/html")
 			.build_raw_response();
@@ -208,7 +216,24 @@ std::string Request::check_body(int error_code)
 		}
 	}
 
-	std::string standard = "<html><title>" + itoa(error_code) + error_pages[error_code] + "</title><body style=\"color: green;background: #000\" > \
-		<h1 style=\"text-align: center;\">ERROR: " + itoa(error_code) + error_pages[error_code] + "</h1></body></html>";
+	std::string standard = "<html><title>" + itoa(error_code) + error_pages[error_code] + "</title><body style=\"color: green;background: #000\" ><h1 style=\"text-align: center;\">ERROR: " + itoa(error_code) + error_pages[error_code] + "</h1></body></html>";
 	return standard;
+}
+
+
+int Request::get_matched_location_for_request_uri()
+{
+	// std::cout << "uri: " << uri << std::endl;
+	// std::cout << "size: " << server_config->get_routes().size() << std::endl;
+	for(size_t i = 0; i < server_config->get_routes().size(); i++)
+	{
+		if(uri.find(server_config->get_routes()[i].get_path()) != std::string::npos)
+			return i;
+	}
+
+	response->set_status_code(404)
+		.set_body(check_body(404))
+		.set_content_type("text/html")
+		.build_raw_response();
+	return -1;
 }

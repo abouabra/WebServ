@@ -4,6 +4,7 @@
 
 Client::~Client()
 {
+	// delete request;
 }
 
 Client::Client(Client const &src): server_config(src.server_config)
@@ -68,12 +69,12 @@ struct sockaddr_in Client::get_client_addr()
 	return client_addr;
 }
 
-Request &Client::get_request()
+Request *Client::get_request()
 {
-	return *request;
+	return request;
 }
 
-void Client::set_request(Request &request)
+void Client::set_request(Request *request)
 {
-	this->request = &request;
+	this->request = request;
 }

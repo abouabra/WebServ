@@ -34,6 +34,6 @@ public:
 	int get_port();
 	Client &set_timer(int timeout);
 
-	Request &get_request();
-	void set_request(Request &request);
+	Request *get_request();
+	void set_request(Request *request);
 };

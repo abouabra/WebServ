@@ -1,5 +1,6 @@
 #include "../includes/Server.hpp"
 #include "../includes/Utils.hpp"
+#include <ctime>
 #include <unistd.h>
 
 /*
@@ -178,11 +179,11 @@ void Server::accept_new_connection(int server_fd, int index)
 
 void Server::close_connection(Client &client, int index)
 {
+	log("Closing connection on: " + itoa(client.get_socket_fd()), INFO);
 	FD_CLR(client.get_socket_fd(), &master);
 	FD_CLR(client.get_socket_fd(), &writes);
 	close(client.get_socket_fd());
 	clients.erase(clients.begin() + index);
-	log("Closing connection on: " + itoa(client.get_socket_fd()), INFO);
 }
 
 int Server::check_for_timeout(Client &client, int index)
@@ -197,37 +198,50 @@ int Server::check_for_timeout(Client &client, int index)
 
 int Server::read_from_client(Client &client, int i)
 {
+
 	client.set_timer(time(NULL));
 	int size = 1024;
 	char buffer[size];
-	std::memset(buffer, 0, sizeof(buffer));
 
-	// log("Reading from socket: " + itoa(client.get_socket_fd()), WARNING);
-	int bytes_read = recv(client.get_socket_fd(), buffer, size, 0);
-	if(bytes_read == -1)
-		return 1;
-	if(bytes_read == 0)
+	log("Reading from socket: " + itoa(client.get_socket_fd()), WARNING);
+	std::string total;
+	while(true)
 	{
-		close_connection(client, i);
-		return 1;
+		std::memset(buffer, 0, sizeof(buffer));
+		int bytes_read = recv(client.get_socket_fd(), buffer, size, 0);
+		if(bytes_read == -1)
+			return 1;
+		if(bytes_read == 0)
+		{
+			close_connection(client, i);
+			return 1;
+		}
+		total.append(buffer, bytes_read);
+		if(bytes_read < size)
+			break;
 	}
-	FD_SET(client.get_socket_fd(), &writes);
-	// FD_CLR(client.get_socket_fd(), &reads);
-	Request request(buffer);
-	Response response;
+
+	Request *request = new Request(total);
+	Response *response = new Response;
 	client.set_request(request);
-	request.set_server_config(client.get_server_config());
-	request.set_response_obj(&response);
-	request.parse_request();
+	request->set_server_config(client.get_server_config());
+	request->set_response(response);
+	request->parse_request();
+
+	// std::cout << "after build: \n" << request.get_response()->get_raw_response() << "\nClock: " << clock() << std::endl;
+	FD_CLR(client.get_socket_fd(), &master);
+	FD_SET(client.get_socket_fd(), &writes);
 	return 0;
 }
 
 int Server::write_to_client(Client &client, int index)
 {
 	client.set_timer(time(NULL));
-	std::string response = client.get_request().response_obj->get_raw_response();
-	// log("Sending to socket: " + itoa(client.get_socket_fd()), WARNING);
-	int bytes_sent = send(client.get_socket_fd(), response.c_str(), response.length(), 0);
+	// client.get_request()->get_response()->build_raw_response();
+	std::string response_body = client.get_request()->get_response()->get_raw_response();
+	// std::cout << "Before sending: \n" << response_body << "\nClock: " << clock() << std::endl;
+	log("Sending to socket: " + itoa(client.get_socket_fd()), WARNING);
+	int bytes_sent = send(client.get_socket_fd(), response_body.c_str(), response_body.length(), 0);
 	if(bytes_sent == -1)
 		return 1;
 	close_connection(client, index);

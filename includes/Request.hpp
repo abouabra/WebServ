@@ -27,10 +27,10 @@ private:
 	std::string content_type;
 	std::string body;
 
-	std::string response;
 	std::map<int , std::string> error_pages;
 
 	Server_Config *server_config;
+	Response *response;
 
 public:
 	Request(std::string request_buff);
@@ -39,19 +39,18 @@ public:
 	Request &operator=(Request const &obj);
 	
 	void set_server_config(Server_Config *config);
-	Server_Config &get_server_config();
+	Server_Config *get_server_config();
 
 	void parse_request();
 	void set_request_buff(std::string request_buff);
-	std::string get_response();
+	// std::string get_response();
 	void fill_info();
 
-	int is_req_well_formed();
-	
-	Response *response_obj;
-	void set_response_obj(Response *response_obj);
-	Response *get_response_obj();
-	
 	std::string check_body(int error_code);
-	// Config config;
+	
+	void set_response(Response *response);
+	Response *get_response();
+
+	int is_req_well_formed();
+	int get_matched_location_for_request_uri();
 };

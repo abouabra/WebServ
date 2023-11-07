@@ -24,13 +24,14 @@ Response &Response::set_body(std::string body)
 	return *this;
 }
 
-void Response::build_raw_response()
+Response& Response::build_raw_response()
 {
 	this->raw_response = this->version + " " + itoa(this->status_code) + "\r\n";
 	this->raw_response += "Content-Type: " + this->ContentType + "\r\n";
 	this->raw_response += "Content-Length: " + itoa(this->body.length()) + "\r\n";
 	this->raw_response += "\r\n";
 	this->raw_response += this->body;
+	return *this;
 }
 
 
