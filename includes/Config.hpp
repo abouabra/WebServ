@@ -1,4 +1,5 @@
 #pragma once
+#include <exception>
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -15,8 +16,9 @@ private:
 
 	bool upload_enabled;
 	std::string upload_directory;
-	std::string redirect_url;
+
 	std::string cgi_bin;
+	std::string redirect_url;
 
 public:
 	Routes();
@@ -26,7 +28,7 @@ public:
 
 	std::string get_path();
 	std::string get_default_file();
-	std::vector<std::string> get_methods();
+	std::vector<std::string> &get_methods();
 	bool get_directory_listing();
 	bool get_upload_enabled();
 	std::string get_upload_directory();
@@ -61,8 +63,8 @@ public:
 	std::string get_host();
 	std::vector<std::string> get_error_pages();
 	int get_client_body_limit();
-	std::vector<Routes> get_routes();
 
+	std::vector<Routes> &get_routes();
 	Server_Config &set_port(int port);
 	Server_Config &set_host(std::string &host);
 	Server_Config &set_error_pages(std::vector<std::string> &error_pages);
