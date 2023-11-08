@@ -53,6 +53,7 @@ private:
 	std::vector<std::string> error_pages;
 	int client_body_limit;
 	std::vector<Routes> routes;
+	std::string root;
 public:
 	Server_Config();
 	~Server_Config();
@@ -65,11 +66,13 @@ public:
 	int get_client_body_limit();
 
 	std::vector<Routes> &get_routes();
+	std::string get_root();
 	Server_Config &set_port(int port);
 	Server_Config &set_host(std::string &host);
 	Server_Config &set_error_pages(std::vector<std::string> &error_pages);
 	Server_Config &set_client_body_limit(int client_body_limit);
 	Server_Config &set_routes(std::vector<Routes> &routes);
+	Server_Config &set_root(std::string root);
 };
 
 class Config {

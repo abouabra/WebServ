@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <sys/_types/_size_t.h>
+#include <unistd.h>
 
 Request::Request()
 {
@@ -132,36 +133,19 @@ void Request::parse_request()
 		return;
 	
 
-
-
-
-
-
-
-
-	std::string path =  uri;
-	if(path == "/")
-		path = "/index.html";
-
-	std::string extention = path.substr(path.find_last_of(".") + 1);
-	std::string mime_type;
-	if(extention == "html")
-		mime_type = "text/html";
-	else if(extention == "css")
-		mime_type = "text/css";
-	else if(extention == "js")
-		mime_type = "application/javascript";
-	else if(extention == "jpg")
-		mime_type = "image/jpeg";
-	else if(extention == "png")
-		mime_type = "image/png";
+	if(method == "GET")
+		handle_GET(index);
+	else if(method == "POST")
+		handle_POST(index);
+	else if(method == "DELETE")
+		handle_DELETE(index);
 	else
-		mime_type = "text/plain";
-
-	std::string res = "HTTP/1.1 200 OK\r\nContent-Type: "+mime_type+"\r\n\r\n";
-	std::string res_body = read_file(path);
-	res.append(res_body);
-	response.set_raw_response(res);
+	{
+		response.set_status_code(501)
+			.set_content_type("text/html")
+			.set_body(check_body( "error_pages/" + itoa(501) + ".html"))
+			.build_raw_response();
+	}
 }
 
 bool Request::is_req_well_formed()
@@ -199,7 +183,7 @@ std::string Request::check_body(std::string path)
 	{
 		if(server_config.get_error_pages()[j] == error_code)
 		{
-			return read_file(path);
+			return read_file(server_config.get_root() + path);
 		}
 	}
 	error_code = error_code.substr(0, 3);
@@ -255,4 +239,63 @@ bool Request::is_method_allowded_in_location(int index)
 		.set_body(check_body( "error_pages/" + itoa(405) + ".html"))
 		.build_raw_response();
 	return false;
+}
+
+void Request::handle_GET(int index)
+{
+	std::string path = server_config.get_routes()[index].get_path();
+	if(path == "/")
+		path = "";
+	if(uri == (path + "/"))
+		path += "/" + server_config.get_routes()[index].get_default_file();
+	else
+	{
+		if(path == "/")
+			path = "";
+		path += uri.substr(uri.find_last_of("/"));
+	}
+	std::cout << "path: " << path << std::endl;
+	path = server_config.get_root() + path;
+	std::cout << "path: " << path << std::endl;
+
+
+	if(access(path.c_str(), F_OK))
+	{
+		response.set_status_code(404)
+			.set_content_type("text/html")
+			.set_body(check_body( "error_pages/" + itoa(404) + ".html"))
+			.build_raw_response();
+		return;
+	}
+
+
+	std::string extention = path.substr(path.find_last_of(".") + 1);
+	std::string mime_type;
+	if(extention == "html")
+		mime_type = "text/html";
+	else if(extention == "css")
+		mime_type = "text/css";
+	else if(extention == "js")
+		mime_type = "application/javascript";
+	else if(extention == "jpg")
+		mime_type = "image/jpeg";
+	else if(extention == "png")
+		mime_type = "image/png";
+	else
+		mime_type = "text/plain";
+
+	std::string res = "HTTP/1.1 200 OK\r\nContent-Type: "+mime_type+"\r\n\r\n";
+	std::string res_body = read_file(path);
+	res.append(res_body);
+	response.set_raw_response(res);
+}
+
+void Request::handle_POST(int index)
+{
+	(void) index;
+}
+
+void Request::handle_DELETE(int index)
+{
+	(void) index;
 }
