@@ -37,7 +37,7 @@ Config::Config(std::string file_name)
 	log("Config file: " + file_name, INFO);
 	config_file = read_config(file_name);
 	parse_config(config_file);
-	print_config();
+	// print_config();
 }
 
 std::string Config::read_config(std::string &config_file)
@@ -263,8 +263,6 @@ Server_Config get_server_config(std::stringstream &ss)
 		{
 			Routes route;
 			route = get_server_route(ss);
-
-			// std::cout << "test: " << route.get_path() << std::endl;
 			new_serve.get_routes().push_back(route);
 		}
 		else if (key.empty())

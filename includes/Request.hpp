@@ -5,6 +5,7 @@
 #include "Utils.hpp"
 #include "Response.hpp"
 #include "Config.hpp"
+
 class Request {
 private:
 	std::string request_buff;
@@ -34,7 +35,6 @@ private:
 
 public:
 	Request();
-	Request(std::string request_buff);
 	~Request();
 	Request(Request const &src);
 	Request &operator=(Request const &obj);

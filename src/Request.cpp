@@ -1,11 +1,25 @@
 #include "../includes/Request.hpp"
 #include <cstddef>
+#include <iostream>
 #include <sstream>
 #include <string>
+#include <sys/_types/_size_t.h>
 
 Request::Request()
 {
-
+	error_pages["400"] = " Bad Request";
+	error_pages["401"] = " Unauthorized";
+	error_pages["403"] = " Forbidden";
+	error_pages["404"] = " Not Found";
+	error_pages["405"] = " Method Not Allowed";
+	error_pages["413"] = " Payload Too Large";
+	error_pages["414"] = " URI Too Long";
+	error_pages["500"] = " Internal Server Error";
+	error_pages["501"] = " Not Implemented";
+	error_pages["505"] = " HTTP Version Not Supported";
+	error_pages["507"] = " Insufficient Storage";
+	error_pages["510"] = " Not Extended";
+	error_pages["511"] = " Network Authentication Required";
 }
 Request::~Request()
 {
@@ -36,27 +50,11 @@ Request &Request::operator=(Request const &obj)
 		content_type = obj.content_type;
 		body = obj.body;
 		transfer_encoding = obj.transfer_encoding;
+		server_config = obj.server_config;
+		response = obj.response;
+		error_pages = obj.error_pages;
 	}
 	return *this;
-}
-
-Request::Request(std::string request_buff)
-{
-	this->request_buff = request_buff;
-
-	error_pages["400"] = " Bad Request";
-	error_pages["401"] = " Unauthorized";
-	error_pages["403"] = " Forbidden";
-	error_pages["404"] = " Not Found";
-	error_pages["405"] = " Method Not Allowed";
-	error_pages["413"] = " Payload Too Large";
-	error_pages["414"] = " URI Too Long";
-	error_pages["500"] = " Internal Server Error";
-	error_pages["501"] = " Not Implemented";
-	error_pages["505"] = " HTTP Version Not Supported";
-	error_pages["507"] = " Insufficient Storage";
-	error_pages["510"] = " Not Extended";
-	error_pages["511"] = " Network Authentication Required";
 }
 
 void Request::set_server_config(Server_Config config)
@@ -120,7 +118,6 @@ void Request::fill_info()
 
 void Request::parse_request()
 {
-	// std::cout << "Request: " << request_buff << std::endl;
 	int index;
 
 	fill_info();
@@ -133,12 +130,15 @@ void Request::parse_request()
 		return;
 	
 	
-	
-	
-	
-	
-	
-	std::string path =  request_buff.substr(request_buff.find("GET ") + 4, request_buff.find(" HTTP/1.1") - 4);
+
+
+
+
+
+
+
+
+	std::string path =  uri;
 	if(path == "/")
 		path = "/index.html";
 
@@ -158,8 +158,6 @@ void Request::parse_request()
 		mime_type = "text/plain";
 
 	std::string res = "HTTP/1.1 200 OK\r\nContent-Type: "+mime_type+"\r\n\r\n";
-	path = "assets/static" + path;
-	// std::cout << "path: " << path << std::endl;
 	std::string res_body = read_file(path);
 	res.append(res_body);
 	response.set_raw_response(res);
@@ -185,7 +183,7 @@ bool Request::is_req_well_formed()
 	if(status)
 	{
 		response.set_status_code(status)
-			.set_body(check_body( "assets/static/error_pages/" + itoa(status) + ".html"))
+			.set_body(check_body( "error_pages/" + itoa(status) + ".html"))
 			.set_content_type("text/html")
 			.build_raw_response();
 		return false;
@@ -203,7 +201,7 @@ std::string Request::check_body(std::string path)
 			return read_file(path);
 		}
 	}
-
+	error_code = error_code.substr(0, 3);
 	std::string standard = "<html><title>" + error_code + error_pages[error_code] + "</title><body style=\"color: green;background: #000\" ><h1 style=\"text-align: center;\">ERROR: " + error_code + error_pages[error_code] + "</h1></body></html>";
 	return standard;
 }
@@ -216,7 +214,6 @@ int Request::get_matched_location_for_request_uri()
 	location = uri.substr(0, uri.find_last_of("/"));
 	if(location.empty())
 		location = "/";
-
 	for(size_t i = 0; i < server_config.get_routes().size(); i++)
 	{
 		if(location == server_config.get_routes()[i].get_path())
@@ -224,7 +221,7 @@ int Request::get_matched_location_for_request_uri()
 	}
 
 	response.set_status_code(404)
-		.set_body(check_body( "assets/static/error_pages/" + itoa(404) + ".html"))
+		.set_body(check_body( "error_pages/" + itoa(404) + ".html"))
 		.set_content_type("text/html")
 		.build_raw_response();
 	return -1;
@@ -233,14 +230,13 @@ int Request::get_matched_location_for_request_uri()
 bool Request::is_location_have_redirection(int index)
 {
 	std::string redirect_url = server_config.get_routes()[index].get_redirect_url();
-	redirect_url.substr(0, redirect_url.find_last_of("/"));
-	std::string total = server_config.get_routes()[index].get_path() + "/" + redirect_url;
-	if(!redirect_url.empty())
+	std::string location = uri.substr(0, uri.find_last_of("/") + 1);
+	std::string url = "http://localhost:" + itoa(server_config.get_port());
+
+	if(!redirect_url.empty() && location == uri)
 	{
-		response.set_status_code(301)
-			.set_body(read_file(total))
-			.set_content_type("text/html")
-			.build_raw_response();
+		redirect_url.insert(0, "/");
+		response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " + url + redirect_url + "\r\n\r\n");
 		return false;
 	}
 	return true;

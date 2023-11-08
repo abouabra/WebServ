@@ -226,7 +226,6 @@ int Server::read_from_client(Client &client, int i)
 	client.get_request().set_server_config(client.get_server_config());
 	client.get_request().parse_request();
 
-	// std::cout << "after build: \n" << request.get_response()->get_raw_response() << "\nClock: " << clock() << std::endl;
 	FD_CLR(client.get_socket_fd(), &master);
 	FD_SET(client.get_socket_fd(), &writes);
 	return 0;
@@ -236,7 +235,6 @@ int Server::write_to_client(Client &client, int index)
 {
 	client.set_timer(time(NULL));
 	std::string response_body = client.get_request().get_response().get_raw_response();
-	// std::cout << "Before sending: \n" << response_body << "\nClock: " << clock() << std::endl;
 	log("Sending to socket: " + itoa(client.get_socket_fd()), WARNING);
 	int bytes_sent = send(client.get_socket_fd(), response_body.c_str(), response_body.length(), 0);
 	if(bytes_sent == -1)
