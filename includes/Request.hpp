@@ -5,6 +5,7 @@
 #include "Utils.hpp"
 #include "Response.hpp"
 #include "Config.hpp"
+
 class Request {
 private:
 	std::string request_buff;
@@ -34,7 +35,6 @@ private:
 
 public:
 	Request();
-	Request(std::string request_buff);
 	~Request();
 	Request(Request const &src);
 	Request &operator=(Request const &obj);
@@ -54,4 +54,8 @@ public:
 	bool is_req_well_formed();
 	int get_matched_location_for_request_uri();
 	bool is_location_have_redirection(int index);
+	bool is_method_allowded_in_location(int index);
+	void handle_GET(int index);
+	void handle_POST(int index);
+	void handle_DELETE(int index);
 };

@@ -39,6 +39,7 @@ std::string itoa(int i)
 
 std::string read_file(std::string name)
 {
+	// name = "/Users/abouabra/1337/Cursus/WebServ/assets/" + name;
 	std::fstream file(name.c_str(), std::ios::in);
 	std::string content;
 	std::string line;

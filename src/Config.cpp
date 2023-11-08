@@ -28,7 +28,10 @@ Config::Config(Config const &src)
 Config& Config::Config::operator=(Config const &obj)
 {
 	if (this != &obj)
+	{
 		servers = obj.servers;
+		config_file = obj.config_file;
+	}
 	return *this;
 }
 
@@ -37,7 +40,7 @@ Config::Config(std::string file_name)
 	log("Config file: " + file_name, INFO);
 	config_file = read_config(file_name);
 	parse_config(config_file);
-	print_config();
+	// print_config();
 }
 
 std::string Config::read_config(std::string &config_file)
@@ -234,6 +237,8 @@ Server_Config get_server_config(std::stringstream &ss)
 			number = is_number(value);
 			new_serve.set_port(number);
 		}
+		else if (key == "root" && ss_2)
+			new_serve.set_root(value);
 		else if (key == "error_pages" && ss_2)
 		{
 			std::vector<std::string> page;
@@ -263,8 +268,6 @@ Server_Config get_server_config(std::stringstream &ss)
 		{
 			Routes route;
 			route = get_server_route(ss);
-
-			// std::cout << "test: " << route.get_path() << std::endl;
 			new_serve.get_routes().push_back(route);
 		}
 		else if (key.empty())
@@ -272,6 +275,18 @@ Server_Config get_server_config(std::stringstream &ss)
 	}
 	return new_serve;
 }
+
+Server_Config& Server_Config::set_root(std::string root)
+{
+	this->root = root;
+	return *this;
+}
+
+std::string Server_Config::get_root()
+{
+	return root;
+}
+
 
 void Config::parse_config(std::string &config_file)
 {
@@ -353,6 +368,7 @@ Server_Config& Server_Config::Server_Config::operator=(Server_Config const &obj)
 		error_pages = obj.error_pages;
 		client_body_limit = obj.client_body_limit;
 		routes = obj.routes;
+		root = obj.root;
 	}
 	return *this;
 }
