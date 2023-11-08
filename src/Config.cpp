@@ -5,7 +5,6 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-
 /*
 
 	CONFIG CLASS
@@ -37,10 +36,9 @@ Config::Config(std::string file_name)
 {
 	log("Config file: " + file_name, INFO);
 	config_file = read_config(file_name);
-	// parse_config(config_file);
+	parse_config(config_file);
 	print_config();
 }
-
 
 std::string Config::read_config(std::string &config_file)
 {
@@ -56,6 +54,17 @@ std::string Config::read_config(std::string &config_file)
 	while(std::getline(file, line))
 		content += line + "\n";
 	return content;
+}
+
+void remove_comment(std::string &line)
+{
+	size_t end;
+	end = line.find_first_of("#");
+	if (end != std::string::npos)
+		line.erase(end);
+	end = line.find_last_not_of(" \t");
+	if (end != std::string::npos)
+		line.erase(end+1);
 }
 
 bool check_value(std::string value)
@@ -77,15 +86,15 @@ bool check_duplicated(std::vector<std::string> method, std::string value)
 	return false;
 }
 
-void get_server_route(std::stringstream &ss, Routes &route)
+Routes get_server_route(std::stringstream &ss)
 {
+	Routes route;
 	std::string line;
 	while (std::getline(ss, line))
 	{
+		remove_comment(line);
 		if (line.empty())
 			continue;
-		if (line[0] != '\t' || (line[1] && line[1] != '\t'))
-			throw(std::runtime_error("Invalide server_config route"));
 		std::stringstream ss_2(line);
 		std::string key;
 		std::string point;
@@ -95,6 +104,16 @@ void get_server_route(std::stringstream &ss, Routes &route)
 		ss_2 >> key;
 		ss_2 >> point;
 		ss_2 >> value;
+		if (line[0] != '\t' || (line[1] && line[1] != '\t'))
+		{
+			if (dash == "route" || dash == "server")
+			{
+				int i = ss.tellg();
+				ss.seekg(i - line.size() - 1);
+				break;
+			}
+			throw(std::runtime_error("Invalide server_config route"));
+		}
 		if (dash != "-" || value.empty() || point != ":")
 			throw(std::runtime_error("Invalide server_config route"));
 		if (key == "path")
@@ -163,7 +182,14 @@ void get_server_route(std::stringstream &ss, Routes &route)
 			if (ss_2 >> value)
 				throw(std::runtime_error("Invalide server_config upload_directory"));
 		}
+		else if (key == "redirect_url")
+		{
+			route.set_redirect_url(value);
+			if (ss_2 >> value)
+				throw(std::runtime_error("Invalide server_config redirect_url"));
+		}
 	}
+	return route;
 }
 
 int is_number(std::string &str)
@@ -176,11 +202,13 @@ int is_number(std::string &str)
 	return (number);
 }
 
-void get_server_config(std::stringstream &ss, Server_Config &new_serve)
+Server_Config get_server_config(std::stringstream &ss)
 {
+	Server_Config new_serve;
 	std::string line;
 	while (std::getline(ss, line))
 	{
+		remove_comment(line);
 		if(line == "server")
 		{
 			int i = ss.tellg();
@@ -234,34 +262,30 @@ void get_server_config(std::stringstream &ss, Server_Config &new_serve)
 		else if (key == "route" && !ss_2)
 		{
 			Routes route;
-			get_server_route(ss, route);
+			route = get_server_route(ss);
+
+			// std::cout << "test: " << route.get_path() << std::endl;
 			new_serve.get_routes().push_back(route);
 		}
 		else if (key.empty())
 			throw(std::runtime_error("Invalide server_config"));
 	}
+	return new_serve;
 }
 
 void Config::parse_config(std::string &config_file)
 {
 	std::stringstream ss(config_file);
 	std::string line;
-	size_t end;
 	while(std::getline(ss, line))
 	{
 		if (line.empty())
 			continue;
-		//remove comment
-		end = line.find_first_of("#");
-		if (end != std::string::npos)
-			line.erase(end);
-		end = line.find_last_not_of(" \t");
-		if (end != std::string::npos)
-			line.erase(end+1);
+		remove_comment(line);
 		if (line == "server")
 		{
 			Server_Config server;
-			get_server_config(ss, server);
+			server = get_server_config(ss);
 			servers.push_back(server);
 		}
 	}
@@ -270,7 +294,6 @@ void Config::parse_config(std::string &config_file)
 
 void Config::print_config()
 {
-
     for(size_t i = 0; i< servers.size(); i++)
     {
         std::cout << "Server id: " << i << std::endl;
@@ -281,9 +304,9 @@ void Config::print_config()
             std::cout << servers[i].get_error_pages()[j] << " ";
         std::cout << std::endl;
         std::cout << "client_body_limit: " << servers[i].get_client_body_limit() << std::endl;
-        std::cout << "routes: " << std::endl;
         for(size_t j = 0; j < servers[i].get_routes().size(); j++)
         {
+        	std::cout << "routes: " << std::endl;
             std::cout << "\tpath: " << servers[i].get_routes()[j].get_path() << std::endl;
             std::cout << "\tdefault_file: " << servers[i].get_routes()[j].get_default_file() << std::endl;
             std::cout << "\tmethods: ";
@@ -294,7 +317,8 @@ void Config::print_config()
             std::cout << "\tupload_enabled: " << servers[i].get_routes()[j].get_upload_enabled() << std::endl;
             std::cout << "\tupload_directory: " << servers[i].get_routes()[j].get_upload_directory() << std::endl;
             std::cout << "\tcgi_bin: " << servers[i].get_routes()[j].get_cgi_bin() << std::endl;
-        }
+            std::cout << "\tredirect_url: " << servers[i].get_routes()[j].get_redirect_url() << std::endl;
+		}
     }
 }
 
@@ -353,7 +377,7 @@ int Server_Config::get_client_body_limit()
 	return client_body_limit;
 }
 
-std::vector<Routes> Server_Config::get_routes()
+std::vector<Routes> &Server_Config::get_routes()
 {
 	return routes;
 }
@@ -422,6 +446,7 @@ Routes& Routes::Routes::operator=(Routes const &obj)
 		upload_enabled = obj.upload_enabled;
 		upload_directory = obj.upload_directory;
 		cgi_bin = obj.cgi_bin;
+		redirect_url = obj.redirect_url;
 	}
 	return *this;
 }
@@ -436,7 +461,7 @@ std::string Routes::get_default_file()
 	return default_file;
 }
 
-std::vector<std::string> Routes::get_methods()
+std::vector<std::string>& Routes::get_methods()
 {
 	return methods;
 }
@@ -505,11 +530,11 @@ Routes& Routes::set_cgi_bin(std::string cgi_bin)
 
 std::string Routes::get_redirect_url()
 {
-	return redirect_url;
+    return redirect_url;
 }
 
 Routes& Routes::set_redirect_url(std::string redirect_url)
 {
-	this->redirect_url = redirect_url;
-	return *this;
+    this->redirect_url = redirect_url;
+    return *this;
 }
