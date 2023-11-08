@@ -86,7 +86,7 @@ void Request::fill_info()
 		if(line.find("HTTP/1.1") != std::string::npos)
 		{
 			method = line.substr(0, line.find(" "));
-			uri = line.substr(line.find("GET ") + 4, line.find(" HTTP/1.1") - 4);
+			uri = line.substr(method.length() + 1, line.find(" ", method.length() + 1) - method.length() - 1);
 			protocol = "HTTP/1.1";
 		}
 		else if(line.find("Host: ") != std::string::npos)
@@ -128,7 +128,8 @@ void Request::parse_request()
 		return;
 	if(!is_location_have_redirection(index))
 		return;
-	
+	if(!is_method_allowded_in_location(index))
+		return;
 	
 
 
@@ -240,4 +241,18 @@ bool Request::is_location_have_redirection(int index)
 		return false;
 	}
 	return true;
+}
+
+bool Request::is_method_allowded_in_location(int index)
+{
+	for(int i = 0; i < (int)server_config.get_routes()[index].get_methods().size(); i++)
+	{
+		if(server_config.get_routes()[index].get_methods()[i] == method)
+			return true;
+	}
+	response.set_status_code(405)
+		.set_content_type("text/html")
+		.set_body(check_body( "error_pages/" + itoa(405) + ".html"))
+		.build_raw_response();
+	return false;
 }

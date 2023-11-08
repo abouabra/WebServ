@@ -54,4 +54,5 @@ public:
 	bool is_req_well_formed();
 	int get_matched_location_for_request_uri();
 	bool is_location_have_redirection(int index);
+	bool is_method_allowded_in_location(int index);
 };
