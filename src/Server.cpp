@@ -140,13 +140,7 @@ void Server::run_server()
 
 void Server::set_to_non_blocking(int client_fd)
 {
-	int status = fcntl(client_fd, F_GETFL, 0);
-	if(status == -1)
-	{
-		log("Error getting socket flags", ERROR);
-		return;
-	}
-	status = fcntl(client_fd, F_SETFL, status | O_NONBLOCK);
+	int status = fcntl(client_fd, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
 	if(status == -1)
 		log("Error setting socket flags", ERROR);
 }
