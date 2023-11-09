@@ -21,6 +21,18 @@ Request::Request()
 	error_pages["507"] = " Insufficient Storage";
 	error_pages["510"] = " Not Extended";
 	error_pages["511"] = " Network Authentication Required";
+
+
+	mime_types["html"] = "text/html";
+	mime_types["css"] = "text/css";
+	mime_types["js"] = "application/javascript";
+	mime_types["jpg"] = "image/jpeg";
+	mime_types["png"] = "image/png";
+	mime_types["txt"] = "text/plain";
+	mime_types["zip"] = "application/zip";
+	mime_types["mp4"] = "video/mp4";
+	mime_types["mp3"] = "audio/mpeg";
+	mime_types["json"] = "application/json";
 }
 Request::~Request()
 {
@@ -243,6 +255,20 @@ bool Request::is_method_allowded_in_location(int index)
 
 void Request::handle_GET(int index)
 {
+	std::string path = get_requested_resource(index);
+	
+	if(!is_resource_exist(path))
+		return;
+
+	if(is_resource_directory(path))
+		handle_resource_directory(path, index);
+	else
+		handle_resource_file(path, index);
+
+}
+
+std::string Request::get_requested_resource(int index)
+{
 	std::string path = server_config.get_routes()[index].get_path();
 	if(path == "/")
 		path = "";
@@ -254,40 +280,106 @@ void Request::handle_GET(int index)
 			path = "";
 		path += uri.substr(uri.find_last_of("/"));
 	}
-	std::cout << "path: " << path << std::endl;
+	// std::cout << "path: " << path << std::endl;
 	path = server_config.get_root() + path;
-	std::cout << "path: " << path << std::endl;
+	// std::cout << "path: " << path << std::endl;
+	return path;
+}
 
-
+bool Request::is_resource_exist(std::string path)
+{
+	// std::cout << "path: " << path << std::endl;
 	if(access(path.c_str(), F_OK))
 	{
 		response.set_status_code(404)
 			.set_content_type("text/html")
 			.set_body(check_body( "error_pages/" + itoa(404) + ".html"))
 			.build_raw_response();
+		return false;
+	}
+	return true;
+}
+
+bool Request::is_resource_directory(std::string path)
+{
+	struct stat s;
+	stat(path.c_str(),&s);
+	if( s.st_mode & S_IFDIR )
+		return true;
+	return false;
+}
+
+void Request::handle_resource_directory(std::string path, int index)
+{
+	// std::cout << "path: " << path << std::endl;
+	if(path[path.length() - 1] != '/')
+	{
+		std::string url = "http://localhost:" + itoa(server_config.get_port());
+		response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " + url + uri + "/\r\n\r\n");
 		return;
 	}
-
-
-	std::string extention = path.substr(path.find_last_of(".") + 1);
-	std::string mime_type;
-	if(extention == "html")
-		mime_type = "text/html";
-	else if(extention == "css")
-		mime_type = "text/css";
-	else if(extention == "js")
-		mime_type = "application/javascript";
-	else if(extention == "jpg")
-		mime_type = "image/jpeg";
-	else if(extention == "png")
-		mime_type = "image/png";
+	if(server_config.get_routes()[index].get_directory_listing() && !server_config.get_routes()[index].get_path().empty())
+		handle_directory_listing(path, index);
 	else
-		mime_type = "text/plain";
+	{
+		response.set_status_code(403)
+			.set_content_type("text/html")
+			.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
+			.build_raw_response();
+	}
+}
 
-	std::string res = "HTTP/1.1 200 OK\r\nContent-Type: "+mime_type+"\r\n\r\n";
-	std::string res_body = read_file(path);
+void Request::handle_resource_file(std::string path, int index)
+{
+
+	if(is_resource_cgi(index))
+		serve_cgi(index);
+	else
+		serve_file(path, index);
+}
+
+void Request::handle_directory_listing(std::string path, int index)
+{
+	(void) index;
+	std::string res = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
+	std::string res_body = "<html><title>Directory listing for " + uri + "</title><body><h1>Directory listing for " + uri + "</h1><hr><ul>";
+	
+	DIR *dir;
+	struct dirent *ent;
+	dir = opendir (path.c_str());
+	while ((ent = readdir (dir)) != NULL)
+	{
+		if(ent->d_name[0] != '.')
+			res_body += "<li><a href=\"" + uri + ent->d_name + "\">" + ent->d_name + "</a></li>";
+	}
+	closedir (dir);
+	res_body += "</ul><hr></body></html>";
+	
 	res.append(res_body);
 	response.set_raw_response(res);
+}
+
+bool Request::is_resource_cgi(int index)
+{
+	if(server_config.get_routes()[index].get_cgi_bin().empty())
+		return false;
+	return true;
+}
+
+void Request::serve_cgi(int index)
+{
+	(void) index;
+}
+
+void Request::serve_file(std::string path, int index)
+{
+	(void) index;
+	std::string extention = path.substr(path.find_last_of(".") + 1);
+
+	response.set_status_code(200)
+		.set_content_type(mime_types[extention])
+		.set_body(read_file(path))
+		.build_raw_response();
 }
 
 void Request::handle_POST(int index)
@@ -299,3 +391,4 @@ void Request::handle_DELETE(int index)
 {
 	(void) index;
 }
+

@@ -5,7 +5,10 @@
 #include "Utils.hpp"
 #include "Response.hpp"
 #include "Config.hpp"
-
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <dirent.h>
 class Request {
 private:
 	std::string request_buff;
@@ -29,6 +32,7 @@ private:
 	std::string body;
 
 	std::map<std::string , std::string> error_pages;
+	std::map<std::string , std::string> mime_types;
 
 	Server_Config server_config;
 	Response response;
@@ -58,4 +62,13 @@ public:
 	void handle_GET(int index);
 	void handle_POST(int index);
 	void handle_DELETE(int index);
+	std::string get_requested_resource(int index);
+	bool is_resource_exist(std::string path);
+	bool is_resource_directory(std::string path);
+	void handle_resource_directory(std::string path, int index);
+	void handle_resource_file(std::string path, int index);
+	void handle_directory_listing(std::string path, int index);
+	bool is_resource_cgi(int index);
+	void serve_cgi(int index);
+	void serve_file(std::string path, int index);
 };
