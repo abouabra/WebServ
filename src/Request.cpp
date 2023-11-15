@@ -215,11 +215,6 @@ int Request::get_matched_location_for_request_uri()
 		if(location == server_config.get_routes()[i].get_path())
 			return i;
 	}
-
-	// response.set_status_code(404)
-	// 	.set_body(check_body( "error_pages/" + itoa(404) + ".html"))
-	// 	.set_content_type("text/html")
-	// 	.build_raw_response();
 	return -1;
 }
 
