@@ -136,9 +136,9 @@ void Request::parse_request()
 	if(!is_req_well_formed())
 		return;
 	index = get_matched_location_for_request_uri();
-	if(index == -1)
-		return;
-	if(!is_location_have_redirection(index))
+	// if(index == -1)
+	// 	return;
+	if(is_location_have_redirection(index))
 		return;
 	if(!is_method_allowded_in_location(index))
 		return;
@@ -216,15 +216,17 @@ int Request::get_matched_location_for_request_uri()
 			return i;
 	}
 
-	response.set_status_code(404)
-		.set_body(check_body( "error_pages/" + itoa(404) + ".html"))
-		.set_content_type("text/html")
-		.build_raw_response();
+	// response.set_status_code(404)
+	// 	.set_body(check_body( "error_pages/" + itoa(404) + ".html"))
+	// 	.set_content_type("text/html")
+	// 	.build_raw_response();
 	return -1;
 }
 
 bool Request::is_location_have_redirection(int index)
 {
+	if (index == -1)
+		return false;
 	std::string redirect_url = server_config.get_routes()[index].get_redirect_url();
 	std::string location = uri.substr(0, uri.find_last_of("/") + 1);
 	std::string url = "http://localhost:" + itoa(server_config.get_port());
@@ -233,13 +235,15 @@ bool Request::is_location_have_redirection(int index)
 	{
 		redirect_url.insert(0, "/");
 		response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " + url + redirect_url + "\r\n\r\n");
-		return false;
+		return true;
 	}
-	return true;
+	return false;
 }
 
 bool Request::is_method_allowded_in_location(int index)
 {
+	if (index == -1 && method == "GET")
+		return true;
 	for(int i = 0; i < (int)server_config.get_routes()[index].get_methods().size(); i++)
 	{
 		if(server_config.get_routes()[index].get_methods()[i] == method)
@@ -255,7 +259,6 @@ bool Request::is_method_allowded_in_location(int index)
 void Request::handle_GET(int index)
 {
 	std::string path = get_requested_resource(index);
-	
 	if(!is_resource_exist(path))
 		return;
 
@@ -264,10 +267,13 @@ void Request::handle_GET(int index)
 	else
 		handle_resource_file(path, index);
 
+	// std::cout << "path: " << path << std::endl;
 }
 
 std::string Request::get_requested_resource(int index)
 {
+	if (index == -1)
+		return server_config.get_root() + uri;
 	std::string path = server_config.get_routes()[index].get_path();
 	if(path == "/")
 		path = "";
@@ -310,6 +316,14 @@ bool Request::is_resource_directory(std::string path)
 
 void Request::handle_resource_directory(std::string path, int index)
 {
+	if (index == -1)
+	{
+		response.set_status_code(403)
+			.set_content_type("text/html")
+			.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
+			.build_raw_response();
+		return;
+	}
 	// std::cout << "path: " << path << std::endl;
 	if(path[path.length() - 1] != '/')
 	{
@@ -330,7 +344,6 @@ void Request::handle_resource_directory(std::string path, int index)
 
 void Request::handle_resource_file(std::string path, int index)
 {
-
 	if(is_resource_cgi(index))
 		serve_cgi(index);
 	else
@@ -360,6 +373,8 @@ void Request::handle_directory_listing(std::string path, int index)
 
 bool Request::is_resource_cgi(int index)
 {
+	if (index == -1)
+		return false;
 	if(server_config.get_routes()[index].get_cgi_bin().empty())
 		return false;
 	return true;
