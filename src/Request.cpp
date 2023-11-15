@@ -3,7 +3,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <sys/_types/_size_t.h>
 #include <unistd.h>
 
 Request::Request()

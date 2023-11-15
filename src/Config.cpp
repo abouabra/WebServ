@@ -83,10 +83,12 @@ bool check_value(std::string value)
 
 bool check_duplicated(std::vector<std::string> method, std::string value)
 {
-	std::vector<std::string>::iterator it = std::find(method.begin(), method.end(), value);
-	if (it == method.end())
-		return true;
-	return false;
+	for (size_t i = 0; i < method.size(); i++)
+	{
+		if (method[i] == value)
+			return false;
+	}
+	return true;
 }
 
 Routes get_server_route(std::stringstream &ss)
