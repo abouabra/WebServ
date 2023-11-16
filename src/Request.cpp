@@ -237,9 +237,9 @@ bool Request::is_location_have_redirection(int index)
 
 bool Request::is_method_allowded_in_location(int index)
 {
-	if (index == -1 && method == "GET")
+	if (index == -1)
 		return true;
-	for(int i = 0; i < (int)server_config.get_routes()[index].get_methods().size(); i++)
+	for(int i = 0; index != -1 && i < (int)server_config.get_routes()[index].get_methods().size(); i++)
 	{
 		if(server_config.get_routes()[index].get_methods()[i] == method)
 			return true;
