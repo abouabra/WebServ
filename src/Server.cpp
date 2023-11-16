@@ -215,7 +215,7 @@ int Server::read_from_client(Client &client, int i)
 			break;
 	}
 
-	std::cout << total << std::endl;
+	// std::cout << total << std::endl;
 	client.get_request().set_request_buff(total);
 	client.get_request().set_server_config(client.get_server_config());
 	client.get_request().parse_request();

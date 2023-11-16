@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Split Page with Forms</title>
+  <title>Main CGI Page</title>
   <style>
 	body {
 		margin: 0px;
@@ -20,13 +20,13 @@
     }
     /* Define colors for each section */
     #section1 {
-      background-color: #FFCC00; /* Yellow */
+      background-color: #FFCC00;
     }
     #section2 {
-      background-color: #00CCFF; /* Blue */
+      background-color: #00CCFF; 
     }
     #section3 {
-      background-color: #FF6699; /* Pink */
+      background-color: #FF6699; 
     }
     /* Style the form inputs */
     form {
@@ -37,21 +37,29 @@
     input[type="text"] {
       padding: 8px;
       font-size: 16px;
+      font-family: roboto, sans-serif;
     }
 	
     input[type="submit"] {
       padding: 8px 12px;
       font-size: 16px;
+      font-family: roboto, sans-serif;
       cursor: pointer;
     }
 	textarea {
 		padding: 8px;
 		font-size: 16px;
-		font-family: Arial, sans-serif; /* Same font as input */
+    font-family: roboto, sans-serif;
 		border-radius: 4px;
 		border: 1px solid #ccc;
 		resize: vertical;
 	}
+  h2 {
+    text-align: center;
+    font-family: roboto, sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+  }
 
   </style>
 </head>
@@ -60,7 +68,7 @@
 
     <div class="section" id="section1">
 		<h2>Python</h2>
-		<form action="/cgi-bin/python" method="post">
+		<form action="/cgi-bin/python/" method="post">
 		  <input type="text"name="fname" placeholder="First Name" required>
 		  <input type="text" name="lname" placeholder="Last Name" required>
 		  <textarea type="text" name="msg" placeholder="Your Message" required></textarea>
@@ -69,21 +77,21 @@
 	  </div>
 
 	  <div class="section" id="section2">
-		<h2>C++</h2>
-		<form action="/cgi-bin/cpp" method="post">
-		  <input type="text" id="firstName" name="firstName" placeholder="First Name" required>
-		  <input type="text" id="lastName" name="lastName" placeholder="Last Name" required>
+		<h2>bash</h2>
+		<form action="/cgi-bin/bash/" method="post">
+		  <input type="text"name="fname" placeholder="First Name" required>
+		  <input type="text" name="lname" placeholder="Last Name" required>
+		  <textarea type="text" name="msg" placeholder="Your Message" required></textarea>
 		  <input type="submit" value="Submit">
 		</form>
 	  </div>
 
 	  <div class="section" id="section3">
 		<h2>PHP</h2>
-		<form action="/cgi-bin/php" method="post">
-		  <label for="firstName">First Name:</label>
-		  <input type="text" id="firstName" name="firstName" required>
-		  <label for="lastName">Last Name:</label>
-		  <input type="text" id="lastName" name="lastName" required>
+		<form action="/cgi-bin/php/" method="post">
+		  <input type="text"name="fname" placeholder="First Name" required>
+		  <input type="text" name="lname" placeholder="Last Name" required>
+		  <textarea type="text" name="msg" placeholder="Your Message" required></textarea>
 		  <input type="submit" value="Submit">
 		</form>
 	  </div>

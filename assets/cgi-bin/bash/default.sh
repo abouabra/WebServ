@@ -1,17 +1,18 @@
-#!/usr/bin/env python3
-import sys
+#!/bin/bash
 
-if len(sys.argv) != 4:
-	print("Usage: python3 default.py <first_name> <last_name> <message>")
-	sys.exit(1)
+# Check if exactly three arguments are provided
+if [ $# -ne 3 ]; then
+	echo "Usage: bash default.sh <first_name> <last_name> <message>"
+    exit 1
+fi
 
 # HTML header
-html_header = """
+html_header=$(cat <<EOF
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Python CGI</title>
+    <title>BASH CGI</title>
     <style>
         body{
             background-color: #000;
@@ -32,14 +33,14 @@ html_header = """
 			margin: 3%;
 		}
         h1{
-            color: #ffd43b;
+            color: #fff;
             font-size: 50px;
             margin: 10px 0;
 			margin: 3%;
 
         }
 		h2{
-            color: #ffd43b;
+            color: #fff;
             font-size: 50px;
             margin: 10px 0;
         }
@@ -47,21 +48,24 @@ html_header = """
 </head>
 <body>
 	<div class="container">
-		<h1>Python CGI</h1>
+		<h1>BASH CGI</h1>
         <div class="items">
-"""
+EOF
+)
 
 # HTML footer
-html_footer = """
+html_footer=$(cat <<EOF
 		</div>
     </div>
 </body>
 </html>
-"""
 
-# Print the formatted arguments
-print(html_header)
-print(f"<h2>First Name: {sys.argv[1]}</h2>")
-print(f"<h2>Last Name: {sys.argv[2]}</h2>")
-print(f"<h2>Message: {sys.argv[3]}</h2>")
-print(html_footer)
+EOF
+)
+
+# Print the formatted arguments with HTML structure
+echo "$html_header"
+echo "<h2>First Name: $1</h2>"
+echo "<h2>Last Name: $2</h2>"
+echo "<h2>Message: $3</h2>"
+echo "$html_footer"

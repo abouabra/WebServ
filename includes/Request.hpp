@@ -13,6 +13,7 @@ class Request {
 private:
 	std::string request_buff;
 
+	std::string request_body;
 	std::string method;
 	std::string uri;
 	std::string protocol;
@@ -69,6 +70,10 @@ public:
 	void handle_resource_file(std::string path, int index);
 	void handle_directory_listing(std::string path, int index);
 	bool is_resource_cgi(int index);
-	void serve_cgi(int index);
+	void serve_cgi(int index, std::string path);
 	void serve_file(std::string path, int index);
+	bool if_location_support_upload(int index);
+	void serve_upload(int index);
+	void execute_cgi(std::string path_of_cgi_bin, char **argv);
+
 };

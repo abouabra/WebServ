@@ -1,4 +1,7 @@
 #include "../includes/Utils.hpp"
+#include <algorithm>
+#include <sstream>
+#include <sys/_types/_size_t.h>
 
 void guard(int status, std::string message)
 {
@@ -48,4 +51,74 @@ std::string read_file(std::string name)
 	while(std::getline(file, line))
 		content += line + "\n";
 	return content;
+}
+
+std::string urlDecode(std::string str)
+{
+	std::string decodedString;
+
+	for (size_t i = 0; i < str.length(); ++i) {
+		if (str[i] == '%') {
+			if (i + 2 < str.length()) {
+				char hexDigit1 = str[i + 1];
+				char hexDigit2 = str[i + 2];
+
+				// Convert hexadecimal digits to their corresponding decimal values
+				int decimalValue1 = 0;
+				if (isdigit(hexDigit1))
+					decimalValue1 = hexDigit1 - '0';
+				else
+					decimalValue1 = tolower(hexDigit1) - 'a' + 10;
+
+
+				int decimalValue2 = 0;
+				if (isdigit(hexDigit2)) 
+					decimalValue2 = hexDigit2 - '0';
+				else 
+					decimalValue2 = tolower(hexDigit2) - 'a' + 10;
+
+				// Combine the decimal values to form the decoded byte
+				char decodedByte = (decimalValue1 << 4) | decimalValue2;
+
+				decodedString += decodedByte;
+				i += 2; // Skip the '%' and the two hexadecimal digits
+			}
+		}
+		else if (str[i] == '+') // Convert the space character back to space
+			decodedString += ' ';
+		else
+			decodedString += str[i]; // Add the non-encoded character to the decoded string
+	}
+
+	return decodedString;
+}
+
+int count_num(std::string str, char c)
+{
+	int count = 0;
+	for(size_t i = 0; i < str.length(); i++)
+	{
+		if(str[i] == c)
+			count++;
+	}
+	return count;
+}
+
+char **make_argv(std::string str, std::string cgi_bin_path, std::string cgi_bin)
+{
+	std::stringstream ss(str);
+	std::string token;
+	int count = count_num(str, '&');
+	char **argv = new char*[count + 3];
+	argv[0] = strdup(cgi_bin_path.c_str());
+	argv[1] = strdup(cgi_bin.c_str());
+	int i = 2;
+	while(std::getline(ss, token, '&'))
+	{
+		std::string value = token.substr(token.find('=') + 1);
+		argv[i] = strdup(value.c_str());
+		i++;
+	}
+	argv[i] = NULL;
+	return argv;
 }

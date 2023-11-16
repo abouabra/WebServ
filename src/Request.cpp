@@ -1,5 +1,6 @@
 #include "../includes/Request.hpp"
 #include <cstddef>
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -91,8 +92,10 @@ Server_Config& Request::get_server_config()
 
 void Request::fill_info()
 {
+	// std::cout << "request_buff: " << request_buff << std::endl;
 	std::stringstream ss(request_buff);
 	std::string line;
+	bool is_body = false;
 	while(std::getline(ss, line))
 	{
 		if(line.find("HTTP/1.1") != std::string::npos)
@@ -125,7 +128,24 @@ void Request::fill_info()
 			body = line.substr(line.find("Body: ") + 6);
 		else if(line.find("Transfer-Encoding: ") != std::string::npos)
 			transfer_encoding = line.substr(line.find("Transfer-Encoding: ") + 19);
+		if (line == "\r")
+		{
+			is_body = true;
+			break;
+		}
 	}
+	if (is_body)
+	{
+		while(std::getline(ss, line))
+		{
+			request_body += line;
+			if(ss.eof())
+				break;
+			request_body += "\n";
+		}
+		request_body = urlDecode(request_body);
+	}
+	// std::cout << "request_body: " << request_body << std::endl;
 }
 
 void Request::parse_request()
@@ -173,8 +193,8 @@ bool Request::is_req_well_formed()
 		status = 400;
 	if(uri.size() > 2048)
 		status = 414;
-	if((int)uri.size() > server_config.get_client_body_limit())
-		status = 413;
+	// if((int)uri.size() > server_config.get_client_body_limit())
+	// 	status = 413;
 	
 	if(status)
 	{
@@ -194,7 +214,7 @@ std::string Request::check_body(std::string path)
 	{
 		if(server_config.get_error_pages()[j] == error_code)
 		{
-			return read_file(server_config.get_root() + path);
+			return read_file(server_config.get_root() + "/" + path);
 		}
 	}
 	error_code = error_code.substr(0, 3);
@@ -210,6 +230,7 @@ int Request::get_matched_location_for_request_uri()
 	location = uri.substr(0, uri.find_last_of("/"));
 	if(location.empty())
 		location = "/";
+	// std::cout << "location: " << location << std::endl;
 	for(size_t i = 0; i < server_config.get_routes().size(); i++)
 	{
 		if(location == server_config.get_routes()[i].get_path())
@@ -340,7 +361,7 @@ void Request::handle_resource_directory(std::string path, int index)
 void Request::handle_resource_file(std::string path, int index)
 {
 	if(is_resource_cgi(index))
-		serve_cgi(index);
+		serve_cgi(index, path);
 	else
 		serve_file(path, index);
 }
@@ -375,10 +396,90 @@ bool Request::is_resource_cgi(int index)
 	return true;
 }
 
-void Request::serve_cgi(int index)
+void Request::serve_cgi(int index, std::string cgi_script_path)
 {
-	(void) index;
+	std::string cgi_bin_path = server_config.get_routes()[index].get_cgi_bin();
+	char **argv  = make_argv(request_body, cgi_bin_path, cgi_script_path);
+	// for(int i = 0; argv[i]; i++)
+	// 	std::cout << "argv[" << i << "]: " << argv[i] << std::endl;
+	// std::cout << "cgi_bin_path: " << cgi_bin_path << std::endl;
+	execute_cgi(cgi_bin_path, argv);
+
 }
+
+void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
+{
+	int pipe_fds[2];
+	int pid;
+	int status;
+	
+	if(pipe(pipe_fds) < 0)
+	{
+		response.set_status_code(500)
+			.set_content_type("text/html")
+			.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+			.build_raw_response();
+		return;
+	}
+
+	pid = fork();
+	if(pid < 0)
+	{
+		response.set_status_code(500)
+			.set_content_type("text/html")
+			.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+			.build_raw_response();
+		return;
+	}
+
+	if(pid == 0)
+	{
+		close(pipe_fds[0]);
+		dup2(pipe_fds[1], 1);
+		close(pipe_fds[1]);
+		execve(path_of_cgi_bin.c_str(), argv, NULL);
+		exit(69);
+	}
+	else
+	{
+		close(pipe_fds[1]);
+		waitpid(pid, &status, 0);
+		int exit_status = status << 8;
+		if(exit_status != 0)
+		{
+			response.set_status_code(500)
+				.set_content_type("text/html")
+				.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+				.build_raw_response();
+			return;
+		}
+		char buffer[1024];
+		std::string res_body;
+		while(true)
+		{
+			std::memset(buffer, 0, sizeof(buffer));
+			int bytes_read = read(pipe_fds[0], buffer, sizeof(buffer));
+			if(bytes_read == -1)
+			{
+				response.set_status_code(500)
+					.set_content_type("text/html")
+					.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+					.build_raw_response();
+				return;
+			}
+			if(bytes_read == 0)
+				break;
+			res_body.append(buffer, bytes_read);
+		}
+
+		response.set_status_code(200)
+			.set_content_type("text/html")
+			.set_body(res_body)
+			.build_raw_response();
+	}
+}
+
+
 
 void Request::serve_file(std::string path, int index)
 {
@@ -393,10 +494,50 @@ void Request::serve_file(std::string path, int index)
 
 void Request::handle_POST(int index)
 {
-	(void) index;
+	if(if_location_support_upload(index))
+	{
+		serve_upload(index);
+		return;
+	}
+
+	std::string path = get_requested_resource(index);
+	// std::cout << "path: " << path << std::endl;
+	// std::cout << "index: " << index << std::endl;
+	if(!is_resource_exist(path))
+		return;
+
+	if(is_resource_directory(path))
+		handle_resource_directory(path, index);
+	else
+	{
+		if(is_resource_cgi(index))
+			serve_cgi(index, path);
+		else
+		{
+			response.set_status_code(403)
+				.set_content_type("text/html")
+				.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
+				.build_raw_response();
+		}
+	}
 }
 
 void Request::handle_DELETE(int index)
+{
+	(void) index;
+}
+
+
+bool Request::if_location_support_upload(int index)
+{
+	if (index == -1)
+		return false;
+	if(server_config.get_routes()[index].get_upload_enabled())
+		return true;
+	return false;
+}
+
+void Request::serve_upload(int index)
 {
 	(void) index;
 }

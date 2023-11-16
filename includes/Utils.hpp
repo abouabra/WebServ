@@ -20,3 +20,7 @@ void guard(int status, std::string message);
 std::string itoa(int i);
 
 std::string read_file(std::string name);
+
+std::string urlDecode(std::string str);
+
+char **make_argv(std::string request_body, std::string cgi_bin_path, std::string cgi_bin);
