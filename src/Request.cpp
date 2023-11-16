@@ -187,14 +187,14 @@ bool Request::is_req_well_formed()
 
 	if(!transfer_encoding.empty()  && transfer_encoding != "chunked")
 		status = 501;
-	if(!transfer_encoding.empty() && !content_length.empty() && method == "POST")
+	if(transfer_encoding.empty() && content_length.empty() && method == "POST")
 		status = 400;
 	if(uri.find_first_not_of(charset) != std::string::npos)
 		status = 400;
 	if(uri.size() > 2048)
 		status = 414;
-	// if((int)uri.size() > server_config.get_client_body_limit())
-	// 	status = 413;
+	if((int)request_body.size() > server_config.get_client_body_limit())
+		status = 413;
 	
 	if(status)
 	{
@@ -425,6 +425,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 	pid = fork();
 	if(pid < 0)
 	{
+		log("fork failed", ERROR);
 		response.set_status_code(500)
 			.set_content_type("text/html")
 			.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
@@ -438,6 +439,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 		dup2(pipe_fds[1], 1);
 		close(pipe_fds[1]);
 		execve(path_of_cgi_bin.c_str(), argv, NULL);
+		log("execve failed", ERROR);
 		exit(69);
 	}
 	else
@@ -447,6 +449,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 		int exit_status = status << 8;
 		if(exit_status != 0)
 		{
+			log("CGI script returned non-zero exit status", ERROR);
 			response.set_status_code(500)
 				.set_content_type("text/html")
 				.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
@@ -461,6 +464,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 			int bytes_read = read(pipe_fds[0], buffer, sizeof(buffer));
 			if(bytes_read == -1)
 			{
+				log("read failed", ERROR);
 				response.set_status_code(500)
 					.set_content_type("text/html")
 					.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
