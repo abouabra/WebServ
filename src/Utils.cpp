@@ -1,7 +1,6 @@
 #include "../includes/Utils.hpp"
 #include <algorithm>
 #include <sstream>
-#include <sys/_types/_size_t.h>
 
 void guard(int status, std::string message)
 {
@@ -108,7 +107,8 @@ char **make_argv(std::string str, std::string cgi_bin_path, std::string cgi_bin)
 {
 	std::stringstream ss(str);
 	std::string token;
-	int count = count_num(str, '&');
+	int count = count_num(str, '&') + 1;
+	// std::cout << "count: " << count + 3 << std::endl;
 	char **argv = new char*[count + 3];
 	argv[0] = strdup(cgi_bin_path.c_str());
 	argv[1] = strdup(cgi_bin.c_str());
@@ -121,4 +121,11 @@ char **make_argv(std::string str, std::string cgi_bin_path, std::string cgi_bin)
 	}
 	argv[i] = NULL;
 	return argv;
+}
+
+void free_arr(char **arr)
+{
+	for(int i = 0; arr[i]; i++)
+		free(arr[i]);
+	delete [] arr;
 }

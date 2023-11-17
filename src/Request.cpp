@@ -66,6 +66,8 @@ Request &Request::operator=(Request const &obj)
 		server_config = obj.server_config;
 		response = obj.response;
 		error_pages = obj.error_pages;
+		mime_types = obj.mime_types;
+		request_body = obj.request_body;
 	}
 	return *this;
 }
@@ -138,6 +140,7 @@ void Request::fill_info()
 	{
 		while(std::getline(ss, line))
 		{
+			// std::cout << "im here" << std::endl;
 			request_body += line;
 			if(ss.eof())
 				break;
@@ -404,7 +407,7 @@ void Request::serve_cgi(int index, std::string cgi_script_path)
 	// 	std::cout << "argv[" << i << "]: " << argv[i] << std::endl;
 	// std::cout << "cgi_bin_path: " << cgi_bin_path << std::endl;
 	execute_cgi(cgi_bin_path, argv);
-
+	free_arr(argv);
 }
 
 void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
@@ -500,9 +503,11 @@ void Request::handle_POST(int index)
 {
 	if(if_location_support_upload(index))
 	{
+		// std::cout << "im here" << std::endl;
 		serve_upload(index);
 		return;
 	}
+	// std::cout << "request_body: " << request_body << std::endl;
 
 	std::string path = get_requested_resource(index);
 	// std::cout << "path: " << path << std::endl;
@@ -544,5 +549,31 @@ bool Request::if_location_support_upload(int index)
 void Request::serve_upload(int index)
 {
 	(void) index;
+
+	// std::cout << request_body << std::endl;
+	std::string filename = request_body.substr(request_body.find("filename=\"") + 10);
+	filename = filename.substr(0, filename.find("\""));
+	// std::cout << "filename: " << filename << std::endl;
+
+	std::string body = request_body.substr(request_body.find("\r\n\r\n") + 4);
+	body = body.substr(0, body.find("\r\n-----"));
+	std::string file_path = server_config.get_root() + "/" + server_config.get_routes()[index].get_upload_directory() + "/" + filename;
+	// std::cout << "file_path: " << file_path << std::endl;
+	std::ofstream file;
+	file.open(file_path.c_str(), std::ios::out | std::ios::binary);
+	if(!file.is_open())
+	{
+		response.set_status_code(500)
+			.set_content_type("text/html")
+			.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+			.build_raw_response();
+		return;
+	}
+	file << body;
+	file.close();
+	response.set_status_code(201)
+		.set_content_type("text/html")
+		.set_body(check_body( "error_pages/" + itoa(201) + ".html"))
+		.build_raw_response();
 }
 
