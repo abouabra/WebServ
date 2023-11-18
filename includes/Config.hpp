@@ -18,6 +18,7 @@ private:
 	std::string upload_directory;
 
 	std::string cgi_bin;
+	std::string cgi_extension;
 	std::string redirect_url;
 
 public:
@@ -34,6 +35,7 @@ public:
 	std::string get_upload_directory();
 	std::string get_cgi_bin();
 	std::string get_redirect_url();
+	std::string get_cgi_extension();
 
 	Routes &set_path(std::string path);
 	Routes &set_default_file(std::string default_file);
@@ -42,6 +44,7 @@ public:
 	Routes &set_upload_enabled(bool upload_enabled);
 	Routes &set_upload_directory(std::string upload_directory);
 	Routes &set_cgi_bin(std::string cgi_bin);
+	Routes &set_cgi_extension(std::string cgi_extension);
 	Routes &set_redirect_url(std::string redirect_url);
 
 };

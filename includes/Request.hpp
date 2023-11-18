@@ -71,7 +71,7 @@ public:
 	void handle_resource_directory_for_DELETE(std::string path, int index);
 	void handle_resource_file(std::string path, int index);
 	void handle_directory_listing(std::string path, int index);
-	bool is_resource_cgi(int index);
+	bool is_resource_cgi(int index, std::string path);
 	void serve_cgi(int index, std::string path);
 	void serve_file(std::string path, int index);
 	bool if_location_support_upload(int index);

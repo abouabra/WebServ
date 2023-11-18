@@ -170,6 +170,12 @@ Routes get_server_route(std::stringstream &ss)
 			if (ss_2 >> value)
 				throw(std::runtime_error("Invalide server_config cgi_bin"));
 		}
+		else if (key == "cgi_extension")
+		{
+			route.set_cgi_extension(value);
+			if (ss_2 >> value)
+				throw(std::runtime_error("Invalide server_config cgi_extension"));
+		}
 		else if (key == "upload_enabled")
 		{
 			if (value == "false")
@@ -334,7 +340,8 @@ void Config::print_config()
             std::cout << "\tupload_enabled: " << servers[i].get_routes()[j].get_upload_enabled() << std::endl;
             std::cout << "\tupload_directory: " << servers[i].get_routes()[j].get_upload_directory() << std::endl;
             std::cout << "\tcgi_bin: " << servers[i].get_routes()[j].get_cgi_bin() << std::endl;
-            std::cout << "\tredirect_url: " << servers[i].get_routes()[j].get_redirect_url() << std::endl;
+            std::cout << "\tcgi_extension: " << servers[i].get_routes()[j].get_cgi_extension() << std::endl;
+			std::cout << "\tredirect_url: " << servers[i].get_routes()[j].get_redirect_url() << std::endl;
 		}
     }
 }
@@ -465,6 +472,7 @@ Routes& Routes::Routes::operator=(Routes const &obj)
 		upload_directory = obj.upload_directory;
 		cgi_bin = obj.cgi_bin;
 		redirect_url = obj.redirect_url;
+		cgi_extension = obj.cgi_extension;
 	}
 	return *this;
 }
@@ -477,6 +485,18 @@ std::string Routes::get_path()
 std::string Routes::get_default_file()
 {
 	return default_file;
+}
+
+
+std::string Routes::get_cgi_extension()
+{
+	return cgi_extension;
+}
+
+Routes& Routes::set_cgi_extension(std::string cgi_extension)
+{
+	this->cgi_extension = cgi_extension;
+	return *this;
 }
 
 std::vector<std::string>& Routes::get_methods()

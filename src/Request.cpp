@@ -430,7 +430,7 @@ void Request::handle_resource_directory(std::string path, int index)
 
 void Request::handle_resource_file(std::string path, int index)
 {
-	if(is_resource_cgi(index))
+	if(is_resource_cgi(index, path))
 		serve_cgi(index, path);
 	else
 		serve_file(path, index);
@@ -457,13 +457,16 @@ void Request::handle_directory_listing(std::string path, int index)
 	response.set_raw_response(res);
 }
 
-bool Request::is_resource_cgi(int index)
+bool Request::is_resource_cgi(int index, std::string path)
 {
 	if (index == -1)
 		return false;
-	if(server_config.get_routes()[index].get_cgi_bin().empty())
-		return false;
-	return true;
+	std::string extention = path.substr(path.find_last_of("."));
+	// std::cout << "index: " << index << std::endl;
+	// std::cout << "extention: " << server_config.get_routes()[index].get_cgi_extension() << std::endl;
+	if(!server_config.get_routes()[index].get_cgi_bin().empty() && extention == server_config.get_routes()[index].get_cgi_extension())
+		return true;
+	return false;
 }
 
 void Request::serve_cgi(int index, std::string cgi_script_path)
@@ -611,7 +614,7 @@ void Request::handle_POST(int index)
 		handle_resource_directory(path, index);
 	else
 	{
-		if(is_resource_cgi(index))
+		if(is_resource_cgi(index, path))
 			serve_cgi(index, path);
 		else
 		{
@@ -636,7 +639,7 @@ void Request::handle_DELETE(int index)
 		handle_resource_directory_for_DELETE(path, index);
 	else
 	{
-		if(is_resource_cgi(index))
+		if(is_resource_cgi(index, path))
 			serve_cgi(index, path);
 		else
 			delete_item(path);
