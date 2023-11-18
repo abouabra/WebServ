@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <sys/_types/_size_t.h>
 #include <sys/wait.h>
 #include <system_error>
 #include <unistd.h>
@@ -433,7 +434,9 @@ void Request::handle_resource_file(std::string path, int index)
 	if(is_resource_cgi(index, path))
 		serve_cgi(index, path);
 	else
+	{
 		serve_file(path, index);
+	}
 }
 
 void Request::handle_directory_listing(std::string path, int index)
@@ -459,12 +462,16 @@ void Request::handle_directory_listing(std::string path, int index)
 
 bool Request::is_resource_cgi(int index, std::string path)
 {
+
 	if (index == -1)
 		return false;
-	std::string extention = path.substr(path.find_last_of("."));
+	size_t pos = path.find_last_of(".");
+	if(pos == std::string::npos)
+		return false;
+	std::string extention = path.substr(pos);
 	// std::cout << "index: " << index << std::endl;
 	// std::cout << "extention: " << server_config.get_routes()[index].get_cgi_extension() << std::endl;
-	if(!server_config.get_routes()[index].get_cgi_bin().empty() && extention == server_config.get_routes()[index].get_cgi_extension())
+	if(!server_config.get_routes()[index].get_cgi_bin().empty() && !server_config.get_routes()[index].get_cgi_extension().empty() && extention == server_config.get_routes()[index].get_cgi_extension())
 		return true;
 	return false;
 }
