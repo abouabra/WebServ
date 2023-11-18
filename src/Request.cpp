@@ -442,6 +442,8 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 	pid = fork();
 	if(pid < 0)
 	{
+		close(pipe_fds[0]);
+		close(pipe_fds[1]);
 		log("fork failed", ERROR);
 		response.set_status_code(500)
 			.set_content_type("text/html")
