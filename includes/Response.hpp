@@ -8,8 +8,8 @@ class Response
 private:
 	std::string version;
 	int status_code;
+	std::string status_message;
 	std::string ContentType;
-	std::string headers;
 	std::string body;
 	std::string raw_response;
 	
@@ -23,6 +23,7 @@ public:
 	Response &set_status_code(int status_code);
 	Response &set_content_type(std::string ContentType);
 	Response &set_body(std::string body);
+	Response &set_status_message(std::string status_message);
 	Response &set_raw_response(std::string raw_response);
 	Response &build_raw_response();
 	std::string get_raw_response();

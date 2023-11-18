@@ -33,7 +33,7 @@ private:
 	std::string content_type;
 	std::string body;
 
-	std::map<std::string , std::string> error_pages;
+	std::map<std::string , std::string> status_message;
 	std::map<std::string , std::string> mime_types;
 
 	Server_Config server_config;
@@ -68,6 +68,7 @@ public:
 	bool is_resource_exist(std::string path);
 	bool is_resource_directory(std::string path);
 	void handle_resource_directory(std::string path, int index);
+	void handle_resource_directory_for_DELETE(std::string path, int index);
 	void handle_resource_file(std::string path, int index);
 	void handle_directory_listing(std::string path, int index);
 	bool is_resource_cgi(int index);
@@ -76,5 +77,6 @@ public:
 	bool if_location_support_upload(int index);
 	void serve_upload(int index);
 	void execute_cgi(std::string path_of_cgi_bin, char **argv);
-
+	void delete_item(std::string path);
+	bool has_write_acces_on_folder(std::string path);
 };

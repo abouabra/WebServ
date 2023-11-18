@@ -26,7 +26,7 @@ Response &Response::set_body(std::string body)
 
 Response& Response::build_raw_response()
 {
-	this->raw_response = this->version + " " + itoa(this->status_code) + "\r\n";
+	this->raw_response = this->version + " " + itoa(this->status_code) + " " + this->status_message + "\r\n";
 	this->raw_response += "Content-Type: " + this->ContentType + "\r\n";
 	this->raw_response += "Content-Length: " + itoa(this->body.length()) + "\r\n";
 	this->raw_response += "\r\n";
@@ -40,7 +40,7 @@ Response::Response()
 	this->version = "HTTP/1.1";
 	this->status_code = 404;
 	this->ContentType = "text/html";
-	this->headers = "";
+	this->status_message = "Not Found";
 	this->body = "";
 	this->raw_response = "";
 }
@@ -61,7 +61,7 @@ Response &Response::operator=(Response const &obj)
 		version = obj.version;
 		status_code = obj.status_code;
 		ContentType = obj.ContentType;
-		headers = obj.headers;
+		status_message = obj.status_message;
 		body = obj.body;
 		raw_response = obj.raw_response;
 	}
@@ -76,5 +76,11 @@ std::string Response::get_raw_response()
 Response &Response::set_raw_response(std::string raw_response)
 {
 	this->raw_response = raw_response;
+	return *this;
+}
+
+Response &Response::set_status_message(std::string status_message)
+{
+	this->status_message = status_message;
 	return *this;
 }

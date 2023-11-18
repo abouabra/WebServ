@@ -5,23 +5,44 @@
 #include <sstream>
 #include <string>
 #include <sys/wait.h>
+#include <system_error>
 #include <unistd.h>
 
 Request::Request()
 {
-	error_pages["400"] = " Bad Request";
-	error_pages["401"] = " Unauthorized";
-	error_pages["403"] = " Forbidden";
-	error_pages["404"] = " Not Found";
-	error_pages["405"] = " Method Not Allowed";
-	error_pages["413"] = " Payload Too Large";
-	error_pages["414"] = " URI Too Long";
-	error_pages["500"] = " Internal Server Error";
-	error_pages["501"] = " Not Implemented";
-	error_pages["505"] = " HTTP Version Not Supported";
-	error_pages["507"] = " Insufficient Storage";
-	error_pages["510"] = " Not Extended";
-	error_pages["511"] = " Network Authentication Required";
+	status_message["100"] = " Continue";
+	status_message["101"] = " Switching Protocols";
+	status_message["102"] = " Processing";
+	status_message["200"] = " OK";
+	status_message["201"] = " Created";
+	status_message["202"] = " Accepted";
+	status_message["203"] = " Non-Authoritative Information";
+	status_message["204"] = " No Content";
+	status_message["205"] = " Reset Content";
+	status_message["206"] = " Partial Content";
+	status_message["207"] = " Multi-Status";
+	status_message["300"] = " Multiple Choices";
+	status_message["301"] = " Moved Permanently";
+	status_message["302"] = " Found";
+	status_message["303"] = " See Other";
+	status_message["304"] = " Not Modified";
+	status_message["400"] = " Bad Request";
+	status_message["401"] = " Unauthorized";
+	status_message["403"] = " Forbidden";
+	status_message["404"] = " Not Found";
+	status_message["405"] = " Method Not Allowed";
+	status_message["406"] = " Not Acceptable";
+	status_message["407"] = " Proxy Authentication Required";
+	status_message["408"] = " Request Timeout";
+	status_message["409"] = " Conflict";
+	status_message["413"] = " Payload Too Large";
+	status_message["414"] = " URI Too Long";
+	status_message["500"] = " Internal Server Error";
+	status_message["501"] = " Not Implemented";
+	status_message["505"] = " HTTP Version Not Supported";
+	status_message["507"] = " Insufficient Storage";
+	status_message["510"] = " Not Extended";
+	status_message["511"] = " Network Authentication Required";
 
 
 	mime_types["html"] = "text/html";
@@ -66,7 +87,7 @@ Request &Request::operator=(Request const &obj)
 		transfer_encoding = obj.transfer_encoding;
 		server_config = obj.server_config;
 		response = obj.response;
-		error_pages = obj.error_pages;
+		status_message = obj.status_message;
 		mime_types = obj.mime_types;
 		request_body = obj.request_body;
 	}
@@ -192,6 +213,7 @@ void Request::parse_request()
 		response.set_status_code(501)
 			.set_content_type("text/html")
 			.set_body(check_body( "error_pages/" + itoa(501) + ".html"))
+			.set_status_message(status_message[itoa(501)])
 			.build_raw_response();
 	}
 }
@@ -218,6 +240,7 @@ bool Request::is_req_well_formed()
 		response.set_status_code(status)
 			.set_body(check_body( "error_pages/" + itoa(status) + ".html"))
 			.set_content_type("text/html")
+			.set_status_message(status_message[itoa(status)])
 			.build_raw_response();
 		return false;
 	}
@@ -235,7 +258,7 @@ std::string Request::check_body(std::string path)
 		}
 	}
 	error_code = error_code.substr(0, 3);
-	std::string standard = "<html><title>" + error_code + error_pages[error_code] + "</title><body style=\"color: green;background: #000\" ><h1 style=\"text-align: center;\">ERROR: " + error_code + error_pages[error_code] + "</h1></body></html>";
+	std::string standard = "<html><title>" + error_code + status_message[error_code] + "</title><body style=\"color: green;background: #000\" ><h1 style=\"text-align: center;\">ERROR: " + error_code + status_message[error_code] + "</h1></body></html>";
 	return standard;
 }
 
@@ -285,6 +308,7 @@ bool Request::is_method_allowded_in_location(int index)
 	response.set_status_code(405)
 		.set_content_type("text/html")
 		.set_body(check_body( "error_pages/" + itoa(405) + ".html"))
+		.set_status_message(status_message[itoa(405)])
 		.build_raw_response();
 	return false;
 }
@@ -332,6 +356,7 @@ bool Request::is_resource_exist(std::string path)
 		response.set_status_code(404)
 			.set_content_type("text/html")
 			.set_body(check_body( "error_pages/" + itoa(404) + ".html"))
+			.set_status_message(status_message[itoa(404)])
 			.build_raw_response();
 		return false;
 	}
@@ -347,6 +372,32 @@ bool Request::is_resource_directory(std::string path)
 	return false;
 }
 
+void Request::handle_resource_directory_for_DELETE(std::string path, int index)
+{
+	if (index == -1)
+	{
+		response.set_status_code(403)
+			.set_content_type("text/html")
+			.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
+			.set_status_message(status_message[itoa(403)])
+			.build_raw_response();
+		return;
+	}
+	// std::cout << "path: " << path << std::endl;
+	if(path[path.length() - 1] != '/')
+	{
+		response.set_status_code(409)
+			.set_content_type("text/html")
+			.set_body(check_body( "error_pages/" + itoa(409) + ".html"))
+			.set_status_message(status_message[itoa(409)])
+			.build_raw_response();
+	}
+	if(!server_config.get_routes()[index].get_cgi_bin().empty())
+		serve_cgi(index, path);
+	else
+		delete_item(path);
+}
+
 void Request::handle_resource_directory(std::string path, int index)
 {
 	if (index == -1)
@@ -354,15 +405,16 @@ void Request::handle_resource_directory(std::string path, int index)
 		response.set_status_code(403)
 			.set_content_type("text/html")
 			.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
+			.set_status_message(status_message[itoa(403)])
 			.build_raw_response();
 		return;
 	}
 	// std::cout << "path: " << path << std::endl;
 	if(path[path.length() - 1] != '/')
 	{
-		std::string url = "http://localhost:" + itoa(server_config.get_port());
-		response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " + url + uri + "/\r\n\r\n");
-		return;
+			std::string url = "http://localhost:" + itoa(server_config.get_port());
+			response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " + url + uri + "/\r\n\r\n");
+			return;
 	}
 	if(server_config.get_routes()[index].get_directory_listing() && !server_config.get_routes()[index].get_path().empty())
 		handle_directory_listing(path, index);
@@ -371,6 +423,7 @@ void Request::handle_resource_directory(std::string path, int index)
 		response.set_status_code(403)
 			.set_content_type("text/html")
 			.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
+			.set_status_message(status_message[itoa(403)])
 			.build_raw_response();
 	}
 }
@@ -435,6 +488,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 		response.set_status_code(500)
 			.set_content_type("text/html")
 			.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+			.set_status_message(status_message[itoa(500)])
 			.build_raw_response();
 		return;
 	}
@@ -448,6 +502,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 		response.set_status_code(500)
 			.set_content_type("text/html")
 			.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+			.set_status_message(status_message[itoa(500)])
 			.build_raw_response();
 		return;
 	}
@@ -490,6 +545,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 			response.set_status_code(500)
 				.set_content_type("text/html")
 				.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+				.set_status_message(status_message[itoa(500)])
 				.build_raw_response();
 			return;
 		}
@@ -505,6 +561,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 				response.set_status_code(500)
 					.set_content_type("text/html")
 					.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+					.set_status_message(status_message[itoa(500)])
 					.build_raw_response();
 				return;
 			}
@@ -516,6 +573,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 		response.set_status_code(200)
 			.set_content_type("text/html")
 			.set_body(res_body)
+			.set_status_message(status_message[itoa(200)])
 			.build_raw_response();
 	}
 }
@@ -526,10 +584,10 @@ void Request::serve_file(std::string path, int index)
 {
 	(void) index;
 	std::string extention = path.substr(path.find_last_of(".") + 1);
-
 	response.set_status_code(200)
 		.set_content_type(mime_types[extention])
 		.set_body(read_file(path))
+		.set_status_message(status_message[itoa(200)])
 		.build_raw_response();
 }
 
@@ -560,6 +618,7 @@ void Request::handle_POST(int index)
 			response.set_status_code(403)
 				.set_content_type("text/html")
 				.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
+				.set_status_message(status_message[itoa(403)])
 				.build_raw_response();
 		}
 	}
@@ -567,7 +626,21 @@ void Request::handle_POST(int index)
 
 void Request::handle_DELETE(int index)
 {
-	(void) index;
+	std::string path = get_requested_resource(index);
+	if(index == -1)
+	{
+		delete_item(path);
+		return;
+	}
+	if(is_resource_directory(path))
+		handle_resource_directory_for_DELETE(path, index);
+	else
+	{
+		if(is_resource_cgi(index))
+			serve_cgi(index, path);
+		else
+			delete_item(path);
+	}
 }
 
 
@@ -600,6 +673,7 @@ void Request::serve_upload(int index)
 		response.set_status_code(500)
 			.set_content_type("text/html")
 			.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+			.set_status_message(status_message[itoa(500)])
 			.build_raw_response();
 		return;
 	}
@@ -608,6 +682,46 @@ void Request::serve_upload(int index)
 	response.set_status_code(201)
 		.set_content_type("text/html")
 		.set_body(check_body( "error_pages/" + itoa(201) + ".html"))
+		.set_status_message(status_message[itoa(201)])
 		.build_raw_response();
 }
 
+void Request::delete_item(std::string path)
+{
+	// std::cout << "here i am: " << path << std::endl;
+	if(std::system(("rm -rf " + path).c_str()) != 0)
+	{
+		if(has_write_acces_on_folder(path))
+		{
+			response.set_status_code(500)
+				.set_content_type("text/html")
+				.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+				.set_status_message(status_message[itoa(500)])
+				.build_raw_response();
+			return;
+		}
+		else
+		{
+			response.set_status_code(403)
+				.set_content_type("text/html")
+				.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
+				.set_status_message(status_message[itoa(403)])
+				.build_raw_response();
+			return;
+		}
+	}
+	response.set_status_code(204)
+		.set_content_type("text/html")
+		.set_body(check_body( "error_pages/" + itoa(204) + ".html"))
+		.set_status_message(status_message[itoa(204)])
+		.build_raw_response();
+}
+
+bool Request::has_write_acces_on_folder(std::string path)
+{
+	struct stat s;
+	stat(path.c_str(),&s);
+	if( s.st_mode & S_IWUSR )
+		return true;
+	return false;
+}
