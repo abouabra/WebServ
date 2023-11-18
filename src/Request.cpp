@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <sys/wait.h>
 #include <unistd.h>
 
 Request::Request()
@@ -98,6 +99,7 @@ void Request::fill_info()
 	std::stringstream ss(request_buff);
 	std::string line;
 	bool is_body = false;
+	// bool is_body = false;
 	while(std::getline(ss, line))
 	{
 		if(line.find("HTTP/1.1") != std::string::npos)
@@ -145,6 +147,18 @@ void Request::fill_info()
 			if(ss.eof())
 				break;
 			request_body += "\n";
+		}
+		// request_body = urlDecode(request_body);
+	}
+	if(uri.find("?") != std::string::npos)
+	{
+		std::string query_string = uri.substr(uri.find("?") + 1);
+		uri = uri.substr(0, uri.find("?"));
+		std::stringstream ss(query_string);
+		std::string token;
+		while(std::getline(ss, token, '&'))
+		{
+			request_body += token + "\n";
 		}
 		request_body = urlDecode(request_body);
 	}
@@ -448,7 +462,25 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 	else
 	{
 		close(pipe_fds[1]);
+		// waitpid(pid, &status, WNOHANG);
+		// int status;
+
+        // printf("Parent process waiting for child...\n");
+
+        // Wait for the child process to terminate or until timeout
 		waitpid(pid, &status, 0);
+
+        // if (child_pid > 0) {
+        //     // Child process terminated
+        //     printf("Child process terminated.\n");
+        // } else if (child_pid == 0) {
+        //     // Timeout reached
+        //     printf("Timeout reached. Child process still running.\n");
+        //     // Optionally, you can kill the child process here using kill(child_pid, SIGTERM);
+        // } else {
+        //     // Error occurred while waiting for the child process
+        //     perror("Error waiting for child process");
+        // }
 		int exit_status = status << 8;
 		if(exit_status != 0)
 		{

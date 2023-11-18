@@ -107,13 +107,13 @@ char **make_argv(std::string str, std::string cgi_bin_path, std::string cgi_bin)
 {
 	std::stringstream ss(str);
 	std::string token;
-	int count = count_num(str, '&') + 1;
+	int count = count_num(str, '\n');
 	// std::cout << "count: " << count + 3 << std::endl;
 	char **argv = new char*[count + 3];
 	argv[0] = strdup(cgi_bin_path.c_str());
 	argv[1] = strdup(cgi_bin.c_str());
 	int i = 2;
-	while(std::getline(ss, token, '&'))
+	while(std::getline(ss, token))
 	{
 		std::string value = token.substr(token.find('=') + 1);
 		argv[i] = strdup(value.c_str());

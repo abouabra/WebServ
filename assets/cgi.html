@@ -60,25 +60,48 @@
     font-size: 24px;
     font-weight: 700;
   }
+  .toogleclass {
+    display: flex;
+    /* justify-content: center; */
+    flex-direction: row;
+    gap: 10px;
+    padding-bottom: 10px;
 
+    /* width: 150px; 
+    margin-bottom: 10px; */
+  }
+  .togglebtn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 16px;
+    font-family: roboto, sans-serif;
+    cursor: pointer;
+  }
   </style>
 </head>
 <body>
   <div class="container">
-
     <div class="section" id="section1">
-		<h2>Python</h2>
-		<form action="/cgi-bin/python/" method="post">
-		  <input type="text"name="fname" placeholder="First Name" required>
-		  <input type="text" name="lname" placeholder="Last Name" required>
-		  <textarea type="text" name="msg" placeholder="Your Message" required></textarea>
-		  <input type="submit" value="Submit">
-		</form>
+      <h2>Python</h2>
+      <div class="toogleclass">
+        <button class="togglebtn" onclick="toggleMethod('py_form', 'get')">GET</button>
+        <button class="togglebtn" onclick="toggleMethod('py_form', 'post')">POST</button>
+      </div>
+      <form id="py_form" action="/cgi-bin/python/" method="post" enctype="text/plain">
+        <input type="text"name="fname" placeholder="First Name" required>
+        <input type="text" name="lname" placeholder="Last Name" required>
+        <textarea type="text" name="msg" placeholder="Your Message" required></textarea>
+        <input type="submit" value="Submit">
+      </form>
 	  </div>
 
 	  <div class="section" id="section2">
 		<h2>bash</h2>
-		<form action="/cgi-bin/bash/" method="post">
+    <div class="toogleclass">
+      <button class="togglebtn" onclick="toggleMethod('bash_form', 'get')">GET</button>
+      <button class="togglebtn" onclick="toggleMethod('bash_form', 'post')">POST</button>
+    </div>
+		<form id="bash_form" action="/cgi-bin/bash/" method="post" enctype="text/plain">
 		  <input type="text"name="fname" placeholder="First Name" required>
 		  <input type="text" name="lname" placeholder="Last Name" required>
 		  <textarea type="text" name="msg" placeholder="Your Message" required></textarea>
@@ -88,7 +111,11 @@
 
 	  <div class="section" id="section3">
 		<h2>PHP</h2>
-		<form action="/cgi-bin/php/" method="post">
+    <div class="toogleclass">
+      <button class="togglebtn" onclick="toggleMethod('php_form', 'get')">GET</button>
+      <button class="togglebtn" onclick="toggleMethod('php_form', 'post')">POST</button>
+    </div>
+		<form id="php_form" action="/cgi-bin/php/" method="post" enctype="text/plain">
 		  <input type="text"name="fname" placeholder="First Name" required>
 		  <input type="text" name="lname" placeholder="Last Name" required>
 		  <textarea type="text" name="msg" placeholder="Your Message" required></textarea>
@@ -97,5 +124,13 @@
 	  </div>
 
   </div>
+
+
+  <script>
+    function toggleMethod(formId, selectedMethod) {
+      const form = document.getElementById(formId);
+      form.setAttribute('method', selectedMethod);
+    }
+  </script>
 </body>
 </html>
