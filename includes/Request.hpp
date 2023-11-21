@@ -10,6 +10,14 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <dirent.h>
+
+class Cookies
+{
+	public:
+		std::string password;
+		std::string username;
+		std::string id;
+};
 class Request {
 private:
 	std::string request_buff;
@@ -26,6 +34,7 @@ private:
 	std::string accept_encoding;
 	std::string accept_language;
 	std::string cookie;
+	std::vector<Cookies> cookies_data;
 	std::string transfer_encoding;
 
 
@@ -70,6 +79,7 @@ public:
 	void handle_resource_directory(std::string path, int index);
 	void handle_resource_directory_for_DELETE(std::string path, int index);
 	void handle_resource_file(std::string path, int index);
+	void handelCookies(int index);
 	void handle_directory_listing(std::string path, int index);
 	bool is_resource_cgi(int index, std::string path);
 	void serve_cgi(int index, std::string path);

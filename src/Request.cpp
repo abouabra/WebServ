@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <system_error>
 #include <unistd.h>
+#include <vector>
 
 Request::Request()
 {
@@ -172,8 +173,9 @@ void Request::fill_info()
 		}
 		// request_body = urlDecode(request_body);
 	}
-	if(uri.find("?") != std::string::npos)
+	if(uri.find("?") != std::string::npos) //need to check if body is url encoded reminder
 	{
+		std::cout << content_type << std::endl;
 		std::string query_string = uri.substr(uri.find("?") + 1);
 		uri = uri.substr(0, uri.find("?"));
 		std::stringstream ss(query_string);
@@ -187,6 +189,20 @@ void Request::fill_info()
 	// std::cout << "request_body: " << request_body << std::endl;
 }
 
+void Request::handelCookies(int index)
+{
+	std::vector<Cookies>::iterator it = cookies_data.begin();
+	while (it != cookies_data.end())
+	{
+		if (cookie == it->id)
+		{
+			if (server_config.get_routes()[index].get_path().find("login"))
+				std::cout << server_config.get_routes()[index].get_path()<<std::endl;
+		}
+		it++;
+	}
+}
+
 void Request::parse_request()
 {
 	int index;
@@ -195,6 +211,8 @@ void Request::parse_request()
 	if(!is_req_well_formed())
 		return;
 	index = get_matched_location_for_request_uri();
+	if (!cookie.empty())
+		handelCookies(index);
 	// if(index == -1)
 	// 	return;
 	if(is_location_have_redirection(index))
@@ -689,7 +707,7 @@ void Request::serve_upload(int index)
 	}
 	file << body;
 	file.close();
-	response.set_status_code(201)
+	response.set_status_code(101)
 		.set_content_type("text/html")
 		.set_body(check_body( "error_pages/" + itoa(201) + ".html"))
 		.set_status_message(status_message[itoa(201)])

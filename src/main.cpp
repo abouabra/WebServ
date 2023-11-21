@@ -5,7 +5,7 @@
 int main(int ac, char **av)
 {
 	std::string file_name;
-	
+
 	if(ac > 2)
 	{
 		std::cout << "Usage: ./webserv <config_file>" << std::endl;
