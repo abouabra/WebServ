@@ -12,6 +12,7 @@ private:
 	std::string ContentType;
 	std::string body;
 	std::string raw_response;
+	std::string connection;
 	
 public:
 	Response();
@@ -25,6 +26,7 @@ public:
 	Response &set_body(std::string body);
 	Response &set_status_message(std::string status_message);
 	Response &set_raw_response(std::string raw_response);
+	Response &set_connection(std::string connection);
 	Response &build_raw_response();
 	std::string get_raw_response();
 

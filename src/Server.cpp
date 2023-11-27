@@ -149,7 +149,7 @@ void Server::accept_new_connection(int server_fd, int index)
 {
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_len = sizeof(client_addr);
-	
+
 	int client_fd = accept(server_fd, reinterpret_cast<sockaddr *>(&client_addr), &client_addr_len);
 	if(client_fd == -1)
 	{
@@ -174,6 +174,11 @@ void Server::accept_new_connection(int server_fd, int index)
 void Server::close_connection(Client &client, int index)
 {
 	log("Closing connection on: " + itoa(client.get_socket_fd()), INFO);
+	if (client.get_request().get_coonection() == "keep-alive")
+	{
+		FD_CLR(client.get_socket_fd(), &writes);
+		return ;
+	}
 	FD_CLR(client.get_socket_fd(), &master);
 	FD_CLR(client.get_socket_fd(), &writes);
 	close(client.get_socket_fd());

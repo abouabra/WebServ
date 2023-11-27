@@ -88,5 +88,6 @@ public:
 	void serve_upload(int index);
 	void execute_cgi(std::string path_of_cgi_bin, char **argv);
 	void delete_item(std::string path);
+	std::string get_coonection();//added by baani
 	bool has_write_acces_on_folder(std::string path);
 };

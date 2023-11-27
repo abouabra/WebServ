@@ -18,6 +18,12 @@ Response &Response::set_content_type(std::string ContentType)
 	return *this;
 }
 
+Response &Response::set_connection(std::string connection)
+{
+	this->connection = connection;
+	return *this;
+}
+
 Response &Response::set_body(std::string body)
 {
 	this->body = body;
@@ -27,9 +33,10 @@ Response &Response::set_body(std::string body)
 Response& Response::build_raw_response()
 {
 	this->raw_response = this->version + " " + itoa(this->status_code) + " " + this->status_message + "\r\n";
+	if (!connection.empty())
+		this->raw_response += "Connection: " + connection + "\r\n";
 	this->raw_response += "Content-Type: " + this->ContentType + "\r\n";
 	this->raw_response += "Content-Length: " + itoa(this->body.length()) + "\r\n";
-	this->raw_response += "Set-Cookie: ss54df\r\n";
 	this->raw_response += "\r\n";
 	this->raw_response += this->body;
 	return *this;

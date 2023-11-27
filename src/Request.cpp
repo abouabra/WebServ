@@ -203,6 +203,11 @@ void Request::handelCookies(int index)
 	}
 }
 
+std::string Request::get_coonection()
+{
+	return connection;
+}
+
 void Request::parse_request()
 {
 	int index;
@@ -231,6 +236,7 @@ void Request::parse_request()
 	{
 		response.set_status_code(501)
 			.set_content_type("text/html")
+			.set_connection(connection)
 			.set_body(check_body( "error_pages/" + itoa(501) + ".html"))
 			.set_status_message(status_message[itoa(501)])
 			.build_raw_response();
@@ -258,6 +264,7 @@ bool Request::is_req_well_formed()
 	{
 		response.set_status_code(status)
 			.set_body(check_body( "error_pages/" + itoa(status) + ".html"))
+			.set_connection(connection)
 			.set_content_type("text/html")
 			.set_status_message(status_message[itoa(status)])
 			.build_raw_response();
@@ -326,6 +333,7 @@ bool Request::is_method_allowded_in_location(int index)
 	}
 	response.set_status_code(405)
 		.set_content_type("text/html")
+		.set_connection(connection)
 		.set_body(check_body( "error_pages/" + itoa(405) + ".html"))
 		.set_status_message(status_message[itoa(405)])
 		.build_raw_response();
@@ -374,6 +382,7 @@ bool Request::is_resource_exist(std::string path)
 	{
 		response.set_status_code(404)
 			.set_content_type("text/html")
+			.set_connection(connection)
 			.set_body(check_body( "error_pages/" + itoa(404) + ".html"))
 			.set_status_message(status_message[itoa(404)])
 			.build_raw_response();
@@ -397,6 +406,7 @@ void Request::handle_resource_directory_for_DELETE(std::string path, int index)
 	{
 		response.set_status_code(403)
 			.set_content_type("text/html")
+			.set_connection(connection)
 			.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
 			.set_status_message(status_message[itoa(403)])
 			.build_raw_response();
@@ -407,6 +417,7 @@ void Request::handle_resource_directory_for_DELETE(std::string path, int index)
 	{
 		response.set_status_code(409)
 			.set_content_type("text/html")
+			.set_connection(connection)
 			.set_body(check_body( "error_pages/" + itoa(409) + ".html"))
 			.set_status_message(status_message[itoa(409)])
 			.build_raw_response();
@@ -423,6 +434,7 @@ void Request::handle_resource_directory(std::string path, int index)
 	{
 		response.set_status_code(403)
 			.set_content_type("text/html")
+			.set_connection(connection)
 			.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
 			.set_status_message(status_message[itoa(403)])
 			.build_raw_response();
@@ -441,6 +453,7 @@ void Request::handle_resource_directory(std::string path, int index)
 	{
 		response.set_status_code(403)
 			.set_content_type("text/html")
+			.set_connection(connection)
 			.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
 			.set_status_message(status_message[itoa(403)])
 			.build_raw_response();
@@ -515,6 +528,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 	{
 		response.set_status_code(500)
 			.set_content_type("text/html")
+			.set_connection(connection)
 			.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
 			.set_status_message(status_message[itoa(500)])
 			.build_raw_response();
@@ -529,6 +543,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 		log("fork failed", ERROR);
 		response.set_status_code(500)
 			.set_content_type("text/html")
+			.set_connection(connection)
 			.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
 			.set_status_message(status_message[itoa(500)])
 			.build_raw_response();
@@ -572,6 +587,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 			log("CGI script returned non-zero exit status", ERROR);
 			response.set_status_code(500)
 				.set_content_type("text/html")
+				.set_connection(connection)
 				.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
 				.set_status_message(status_message[itoa(500)])
 				.build_raw_response();
@@ -588,6 +604,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 				log("read failed", ERROR);
 				response.set_status_code(500)
 					.set_content_type("text/html")
+					.set_connection(connection)
 					.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
 					.set_status_message(status_message[itoa(500)])
 					.build_raw_response();
@@ -600,6 +617,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 
 		response.set_status_code(200)
 			.set_content_type("text/html")
+			.set_connection(connection)
 			.set_body(res_body)
 			.set_status_message(status_message[itoa(200)])
 			.build_raw_response();
@@ -614,6 +632,7 @@ void Request::serve_file(std::string path, int index)
 	std::string extention = path.substr(path.find_last_of(".") + 1);
 	response.set_status_code(200)
 		.set_content_type(mime_types[extention])
+		.set_connection(connection)
 		.set_body(read_file(path))
 		.set_status_message(status_message[itoa(200)])
 		.build_raw_response();
@@ -645,6 +664,7 @@ void Request::handle_POST(int index)
 		{
 			response.set_status_code(403)
 				.set_content_type("text/html")
+				.set_connection(connection)
 				.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
 				.set_status_message(status_message[itoa(403)])
 				.build_raw_response();
@@ -700,6 +720,7 @@ void Request::serve_upload(int index)
 	{
 		response.set_status_code(500)
 			.set_content_type("text/html")
+			.set_connection(connection)
 			.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
 			.set_status_message(status_message[itoa(500)])
 			.build_raw_response();
@@ -707,8 +728,9 @@ void Request::serve_upload(int index)
 	}
 	file << body;
 	file.close();
-	response.set_status_code(101)
-		.set_content_type("text/html")
+	response.set_status_code(200)
+		.set_content_type(request_body.substr(request_body.find("Content-Type: ") + 14))//type of upload file
+		.set_connection(connection)
 		.set_body(check_body( "error_pages/" + itoa(201) + ".html"))
 		.set_status_message(status_message[itoa(201)])
 		.build_raw_response();
@@ -723,6 +745,7 @@ void Request::delete_item(std::string path)
 		{
 			response.set_status_code(500)
 				.set_content_type("text/html")
+				.set_connection(connection)
 				.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
 				.set_status_message(status_message[itoa(500)])
 				.build_raw_response();
@@ -732,6 +755,7 @@ void Request::delete_item(std::string path)
 		{
 			response.set_status_code(403)
 				.set_content_type("text/html")
+				.set_connection(connection)
 				.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
 				.set_status_message(status_message[itoa(403)])
 				.build_raw_response();
@@ -740,6 +764,7 @@ void Request::delete_item(std::string path)
 	}
 	response.set_status_code(204)
 		.set_content_type("text/html")
+		.set_connection(connection)
 		.set_body(check_body( "error_pages/" + itoa(204) + ".html"))
 		.set_status_message(status_message[itoa(204)])
 		.build_raw_response();

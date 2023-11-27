@@ -1,5 +1,5 @@
 body{
-	background-color: #000;
+	background-color: #2c2a2a50;
 }
 /* div{
 	width: 100%;
@@ -13,7 +13,7 @@ h1{
 	font-size: 50px;
 	margin: 10px 0;
 	margin: 3%;
-
+	
 }
 /* img {
 	padding: 10%;
@@ -26,7 +26,7 @@ h1{
 	justify-content: center; 
 	align-items: center;
 	flex-direction: column; /* Added to stack the headings vertically */
-
+	
 }
 .items{
 	display: flex;
