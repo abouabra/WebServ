@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <sys/_types/_size_t.h>

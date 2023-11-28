@@ -1,5 +1,6 @@
 #include "../includes/Server.hpp"
 #include "../includes/Utils.hpp"
+#include <__errc>
 #include <ctime>
 #include <unistd.h>
 
@@ -174,11 +175,6 @@ void Server::accept_new_connection(int server_fd, int index)
 void Server::close_connection(Client &client, int index)
 {
 	log("Closing connection on: " + itoa(client.get_socket_fd()), INFO);
-	if (client.get_request().get_coonection() == "keep-alive")
-	{
-		FD_CLR(client.get_socket_fd(), &writes);
-		return ;
-	}
 	FD_CLR(client.get_socket_fd(), &master);
 	FD_CLR(client.get_socket_fd(), &writes);
 	close(client.get_socket_fd());
@@ -187,8 +183,12 @@ void Server::close_connection(Client &client, int index)
 
 int Server::check_for_timeout(Client &client, int index)
 {
-	if(time(NULL) - client.get_timeout() > 5)
+	int timeout = 5;
+	if (client.get_request().get_coonection().find("keep-alive")!=std::string::npos)
+		timeout += 200;
+	if(time(NULL) - client.get_timeout() > timeout)
 	{
+		std::cout << "------timeout-------"<<std::endl;
 		close_connection(client, index);
 		return 1;
 	}
@@ -210,11 +210,12 @@ int Server::read_from_client(Client &client, int i)
 		int bytes_read = recv(client.get_socket_fd(), buffer, size, 0);
 		if(bytes_read == -1)
 			return 1;
-		if(bytes_read == 0)
-		{
-			close_connection(client, i);
-			return 1;
-		}
+		//why close connection on zero 0
+		// if(bytes_read == 0)
+		// {
+		// 	close_connection(client, i);
+		// 	return 1;
+		// }
 		total.append(buffer, bytes_read);
 		if(bytes_read < size)
 			break;
