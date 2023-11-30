@@ -58,6 +58,8 @@ Request::Request()
 	mime_types["mp4"] = "video/mp4";
 	mime_types["mp3"] = "audio/mpeg";
 	mime_types["json"] = "application/json";
+	time_out = 5;
+	connection = "closed\r\n";
 }
 Request::~Request()
 {
@@ -204,9 +206,13 @@ void Request::handelCookies(int index)
 	}
 }
 
-std::string Request::get_coonection()
+std::string Request::get_connection()
 {
 	return connection;
+}
+void Request::set_connection(std::string str)
+{
+	connection = str;
 }
 
 void Request::parse_request()
@@ -332,6 +338,7 @@ bool Request::is_method_allowded_in_location(int index)
 		if(server_config.get_routes()[index].get_methods()[i] == method)
 			return true;
 	}
+	std::cout << method <<std::endl;
 	response.set_status_code(405)
 		.set_content_type("text/html")
 		.set_connection(connection)
@@ -712,13 +719,17 @@ void Request::serve_upload(int index)
 	// std::cout << "filename: " << filename << std::endl;
 
 	std::string body = request_body.substr(request_body.find("\r\n\r\n") + 4);
-	body = body.substr(0, body.find("\r\n-----"));
-	std::string file_path = server_config.get_root() + "/" + server_config.get_routes()[index].get_upload_directory() + "/" + filename;
+	//body = body.substr(0, body.find("\r\n-----"));
+	//?????
+	//file path change to custem path
+	std::string file_path = server_config.get_routes()[index].get_upload_directory() + "/" + filename;
 	// std::cout << "file_path: " << file_path << std::endl;
+	std::cout << "upload to " + file_path <<std::endl;
 	std::ofstream file;
 	file.open(file_path.c_str(), std::ios::out | std::ios::binary);
 	if(!file.is_open())
 	{
+		std::perror("thmalke ");
 		response.set_status_code(500)
 			.set_content_type("text/html")
 			.set_connection(connection)
@@ -771,6 +782,15 @@ void Request::delete_item(std::string path)
 		.build_raw_response();
 }
 
+unsigned int	Request::get_time()
+{
+	return time_out;
+}
+
+void Request::set_time(unsigned int tm)
+{
+	time_out = tm;
+}
 bool Request::has_write_acces_on_folder(std::string path)
 {
 	struct stat s;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <_types/_intmax_t.h>
 #include <iostream>
 #include <map>
 #include "Utils.hpp"
@@ -41,6 +42,7 @@ private:
 	std::string content_length;
 	std::string content_type;
 	std::string body;
+	unsigned int time_out;
 
 	std::map<std::string , std::string> status_message;
 	std::map<std::string , std::string> mime_types;
@@ -88,6 +90,9 @@ public:
 	void serve_upload(int index);
 	void execute_cgi(std::string path_of_cgi_bin, char **argv);
 	void delete_item(std::string path);
-	std::string get_coonection();//added by baani
+	std::string get_connection();//added by baani
+	void set_connection(std::string str);
+	unsigned int get_time();
+	void set_time(unsigned int tm);
 	bool has_write_acces_on_folder(std::string path);
 };

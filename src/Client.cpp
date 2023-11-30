@@ -28,8 +28,6 @@ Client::Client(int socket_fd, struct sockaddr_in addr)
 {
 	this->socket_fd = socket_fd;
 	client_addr = addr;
-	timeout = 0;
-
 }
 
 int Client::get_port()

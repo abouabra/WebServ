@@ -33,8 +33,7 @@ Response &Response::set_body(std::string body)
 Response& Response::build_raw_response()
 {
 	this->raw_response = this->version + " " + itoa(this->status_code) + " " + this->status_message + "\r\n";
-	if (!connection.empty())
-		this->raw_response += "Connection: " + connection + "\r\n";
+	this->raw_response += "Connection: " + connection;
 	this->raw_response += "Content-Type: " + this->ContentType + "\r\n";
 	this->raw_response += "Content-Length: " + itoa(this->body.length()) + "\r\n";
 	this->raw_response += "\r\n";

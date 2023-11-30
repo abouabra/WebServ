@@ -123,7 +123,6 @@ void Server::run_server()
 
 			if(check_for_timeout(clients[i], i))
 				continue;
-
 			if(FD_ISSET(clients[i].get_socket_fd(), &reads))
 			{
 				if(read_from_client(clients[i], i))
@@ -133,7 +132,6 @@ void Server::run_server()
 			{
 				if(write_to_client(clients[i], i))
 					continue;
-				
 			}
 		}
 	}
@@ -164,7 +162,7 @@ void Server::accept_new_connection(int server_fd, int index)
 
 	FD_SET(client_fd, &master);
 	FD_SET(client_fd, &reads);
-	
+
 	Client client(client_fd, client_addr);
 	client.set_server_config(conf.servers[index]);
 	client.set_timer(time(NULL));
@@ -178,15 +176,13 @@ void Server::close_connection(Client &client, int index)
 	FD_CLR(client.get_socket_fd(), &master);
 	FD_CLR(client.get_socket_fd(), &writes);
 	close(client.get_socket_fd());
+	client.get_request().set_connection("close\r\n");
 	clients.erase(clients.begin() + index);
 }
 
 int Server::check_for_timeout(Client &client, int index)
 {
-	int timeout = 5;
-	if (client.get_request().get_coonection().find("keep-alive")!=std::string::npos)
-		timeout += 200;
-	if(time(NULL) - client.get_timeout() > timeout)
+	if(time(NULL) - client.get_timeout() > client.get_request().get_time())
 	{
 		std::cout << "------timeout-------"<<std::endl;
 		close_connection(client, index);
@@ -198,7 +194,6 @@ int Server::check_for_timeout(Client &client, int index)
 int Server::read_from_client(Client &client, int i)
 {
 
-	client.set_timer(time(NULL));
 	int size = 1024;
 	char buffer[size];
 
@@ -206,27 +201,26 @@ int Server::read_from_client(Client &client, int i)
 	std::string total;
 	while(true)
 	{
+		client.set_timer(time(NULL));
 		std::memset(buffer, 0, sizeof(buffer));
 		int bytes_read = recv(client.get_socket_fd(), buffer, size, 0);
 		if(bytes_read == -1)
 			return 1;
-		//why close connection on zero 0
-		// if(bytes_read == 0)
-		// {
-		// 	close_connection(client, i);
-		// 	return 1;
-		// }
+		if(bytes_read == 0)
+		{
+			close_connection(client, i);
+			return 1;
+		}
 		total.append(buffer, bytes_read);
 		if(bytes_read < size)
 			break;
 	}
-
 	// std::cout << total << std::endl;
 	client.get_request().set_request_buff(total);
 	client.get_request().set_server_config(client.get_server_config());
 	client.get_request().parse_request();
 
-	FD_CLR(client.get_socket_fd(), &master);
+	//FD_CLR(client.get_socket_fd(), &master);//to hande keep-alive
 	FD_SET(client.get_socket_fd(), &writes);
 	return 0;
 }
@@ -239,6 +233,9 @@ int Server::write_to_client(Client &client, int index)
 	int bytes_sent = send(client.get_socket_fd(), response_body.c_str(), response_body.length(), 0);
 	if(bytes_sent == -1)
 		return 1;
-	close_connection(client, index);
+	if (client.get_request().get_connection() == "close\r\n")
+		close_connection(client, index);
+	else
+		FD_CLR(client.get_socket_fd(), &writes);
 	return 0;
 }
