@@ -33,7 +33,7 @@ Response &Response::set_body(std::string body)
 Response& Response::build_raw_response()
 {
 	this->raw_response = this->version + " " + itoa(this->status_code) + " " + this->status_message + "\r\n";
-	this->raw_response += "Connection: " + connection;
+	this->raw_response += "Connection: " + connection + "\r\n";
 	this->raw_response += "Content-Type: " + this->ContentType + "\r\n";
 	this->raw_response += "Content-Length: " + itoa(this->body.length()) + "\r\n";
 	this->raw_response += "\r\n";
@@ -75,7 +75,7 @@ Response &Response::operator=(Response const &obj)
 	return *this;
 }
 
-std::string Response::get_raw_response()
+std::string& Response::get_raw_response()
 {
 	return this->raw_response;
 }

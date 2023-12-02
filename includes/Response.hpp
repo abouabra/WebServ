@@ -28,6 +28,6 @@ public:
 	Response &set_raw_response(std::string raw_response);
 	Response &set_connection(std::string connection);
 	Response &build_raw_response();
-	std::string get_raw_response();
+	std::string &get_raw_response();
 
 };

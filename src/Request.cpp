@@ -58,8 +58,8 @@ Request::Request()
 	mime_types["mp4"] = "video/mp4";
 	mime_types["mp3"] = "audio/mpeg";
 	mime_types["json"] = "application/json";
-	time_out = 5;
-	connection = "closed\r\n";
+	time_out = 3;
+	connection = "closed";
 }
 Request::~Request()
 {
@@ -95,6 +95,7 @@ Request &Request::operator=(Request const &obj)
 		status_message = obj.status_message;
 		mime_types = obj.mime_types;
 		request_body = obj.request_body;
+		time_out = obj.time_out;
 	}
 	return *this;
 }
@@ -128,6 +129,8 @@ void Request::fill_info()
 	// bool is_body = false;
 	while(std::getline(ss, line))
 	{
+		if(line.find("\r") != std::string::npos)
+			line.replace(line.find_last_of("\r"), 1, "");
 		if(line.find("HTTP/1.1") != std::string::npos)
 		{
 			method = line.substr(0, line.find(" "));
@@ -158,12 +161,13 @@ void Request::fill_info()
 			body = line.substr(line.find("Body: ") + 6);
 		else if(line.find("Transfer-Encoding: ") != std::string::npos)
 			transfer_encoding = line.substr(line.find("Transfer-Encoding: ") + 19);
-		if (line == "\r")
+		if (line.empty())
 		{
 			is_body = true;
 			break;
 		}
 	}
+	request_body.clear();
 	if (is_body)
 	{
 		while(std::getline(ss, line))
@@ -178,7 +182,7 @@ void Request::fill_info()
 	}
 	if(uri.find("?") != std::string::npos) //need to check if body is url encoded reminder
 	{
-		std::cout << content_type << std::endl;
+		// std::cout << content_type << std::endl;
 		std::string query_string = uri.substr(uri.find("?") + 1);
 		uri = uri.substr(0, uri.find("?"));
 		std::stringstream ss(query_string);
@@ -291,7 +295,7 @@ std::string Request::check_body(std::string path)
 		}
 	}
 	error_code = error_code.substr(0, 3);
-	std::string standard = "<html><title>" + error_code + status_message[error_code] + "</title><body style=\"color: green;background: #000\" ><h1 style=\"text-align: center;\">ERROR: " + error_code + status_message[error_code] + "</h1></body></html>";
+	std::string standard = "<html><title>" + error_code + status_message[error_code] + "</title><body style=\"color: green;background: #000\" ><h1 style=\"text-align: center;\">" + error_code + status_message[error_code] + "</h1></body></html>";
 	return standard;
 }
 
@@ -318,12 +322,13 @@ bool Request::is_location_have_redirection(int index)
 		return false;
 	std::string redirect_url = server_config.get_routes()[index].get_redirect_url();
 	std::string location = uri.substr(0, uri.find_last_of("/") + 1);
-	std::string url = "http://localhost:" + itoa(server_config.get_port());
 
 	if(!redirect_url.empty() && location == uri)
 	{
 		redirect_url.insert(0, "/");
-		response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " + url + redirect_url + "\r\n\r\n");
+		std::cout << "rediret to: " << redirect_url << std::endl;
+		response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " + redirect_url + "\r\nContent-Type: text/html\r\nContent-Length: 0\r\nConnection: " + connection + "\r\n\r\n");
+
 		return true;
 	}
 	return false;
@@ -338,7 +343,6 @@ bool Request::is_method_allowded_in_location(int index)
 		if(server_config.get_routes()[index].get_methods()[i] == method)
 			return true;
 	}
-	std::cout << method <<std::endl;
 	response.set_status_code(405)
 		.set_content_type("text/html")
 		.set_connection(connection)
@@ -451,8 +455,8 @@ void Request::handle_resource_directory(std::string path, int index)
 	// std::cout << "path: " << path << std::endl;
 	if(path[path.length() - 1] != '/')
 	{
-			std::string url = "http://localhost:" + itoa(server_config.get_port());
-			response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " + url + uri + "/\r\n\r\n");
+			std::cout << "rediret to: " << uri << std::endl;
+			response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " +  uri + "/\r\nContent-Type: text/html\r\nContent-Length: 0\r\nConnection: " + connection + "\r\n\r\n");
 			return;
 	}
 	if(server_config.get_routes()[index].get_directory_listing() && !server_config.get_routes()[index].get_path().empty())
@@ -473,15 +477,12 @@ void Request::handle_resource_file(std::string path, int index)
 	if(is_resource_cgi(index, path))
 		serve_cgi(index, path);
 	else
-	{
 		serve_file(path, index);
-	}
 }
 
 void Request::handle_directory_listing(std::string path, int index)
 {
 	(void) index;
-	std::string res = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
 	std::string res_body = "<html><title>Directory listing for " + uri + "</title><body><h1>Directory listing for " + uri + "</h1><hr><ul>";
 	
 	DIR *dir;
@@ -495,8 +496,12 @@ void Request::handle_directory_listing(std::string path, int index)
 	closedir (dir);
 	res_body += "</ul><hr></body></html>";
 	
-	res.append(res_body);
-	response.set_raw_response(res);
+	response.set_status_code(200)
+		.set_content_type("text/html")
+		.set_connection(connection)
+		.set_status_message(status_message[itoa(200)])
+		.set_body(res_body)
+		.build_raw_response();
 }
 
 bool Request::is_resource_cgi(int index, std::string path)
@@ -542,7 +547,6 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 			.build_raw_response();
 		return;
 	}
-
 	pid = fork();
 	if(pid < 0)
 	{
@@ -570,25 +574,23 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 	else
 	{
 		close(pipe_fds[1]);
-		// waitpid(pid, &status, WNOHANG);
-		// int status;
-
-        // printf("Parent process waiting for child...\n");
-
-        // Wait for the child process to terminate or until timeout
-		waitpid(pid, &status, 0);
-
-        // if (child_pid > 0) {
-        //     // Child process terminated
-        //     printf("Child process terminated.\n");
-        // } else if (child_pid == 0) {
-        //     // Timeout reached
-        //     printf("Timeout reached. Child process still running.\n");
-        //     // Optionally, you can kill the child process here using kill(child_pid, SIGTERM);
-        // } else {
-        //     // Error occurred while waiting for the child process
-        //     perror("Error waiting for child process");
-        // }
+		time_t start_time = time(NULL);
+		while (waitpid(pid, &status, WNOHANG) == 0)
+		{
+			if (time(NULL) - start_time > time_out)
+			{
+				kill(pid, SIGTERM);
+				close(pipe_fds[0]);
+				log("CGI script timeout", ERROR);
+				response.set_status_code(500)
+					.set_content_type("text/html")
+					.set_connection(connection)
+					.set_body(check_body( "error_pages/" + itoa(500) + ".html"))
+					.set_status_message(status_message[itoa(500)])
+					.build_raw_response();
+				return;
+			}
+		}
 		int exit_status = status << 8;
 		if(exit_status != 0)
 		{
@@ -622,7 +624,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 				break;
 			res_body.append(buffer, bytes_read);
 		}
-
+		close(pipe_fds[0]);
 		response.set_status_code(200)
 			.set_content_type("text/html")
 			.set_connection(connection)
@@ -632,12 +634,21 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 	}
 }
 
-
-
 void Request::serve_file(std::string path, int index)
 {
 	(void) index;
-	std::string extention = path.substr(path.find_last_of(".") + 1);
+	size_t pos = path.find_last_of(".");
+	if(pos == std::string::npos)
+	{
+		response.set_status_code(403)
+			.set_content_type("text/html")
+			.set_connection(connection)
+			.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
+			.set_status_message(status_message[itoa(403)])
+			.build_raw_response();
+		return;
+	}
+	std::string extention = path.substr(pos + 1);
 	response.set_status_code(200)
 		.set_content_type(mime_types[extention])
 		.set_connection(connection)
@@ -712,7 +723,6 @@ bool Request::if_location_support_upload(int index)
 void Request::serve_upload(int index)
 {
 	(void) index;
-
 	// std::cout << request_body << std::endl;
 	std::string filename = request_body.substr(request_body.find("filename=\"") + 10);
 	filename = filename.substr(0, filename.find("\""));
@@ -722,14 +732,14 @@ void Request::serve_upload(int index)
 	//body = body.substr(0, body.find("\r\n-----"));
 	//?????
 	//file path change to custem path
-	std::string file_path = server_config.get_routes()[index].get_upload_directory() + "/" + filename;
+	// std::string file_path = server_config.get_routes()[index].get_upload_directory() + "/" + filename;
+	std::string file_path = server_config.get_root() + "/" + server_config.get_routes()[index].get_upload_directory() + "/" + filename;
 	// std::cout << "file_path: " << file_path << std::endl;
-	std::cout << "upload to " + file_path <<std::endl;
+	std::cout << "upload to " + file_path << std::endl;
 	std::ofstream file;
 	file.open(file_path.c_str(), std::ios::out | std::ios::binary);
 	if(!file.is_open())
 	{
-		std::perror("thmalke ");
 		response.set_status_code(500)
 			.set_content_type("text/html")
 			.set_connection(connection)
@@ -740,8 +750,8 @@ void Request::serve_upload(int index)
 	}
 	file << body;
 	file.close();
-	response.set_status_code(200)
-		.set_content_type(request_body.substr(request_body.find("Content-Type: ") + 14))//type of upload file
+	response.set_status_code(201)
+		// .set_content_type(request_body.substr(request_body.find("Content-Type: ") + 14))//type of upload file
 		.set_connection(connection)
 		.set_body(check_body( "error_pages/" + itoa(201) + ".html"))
 		.set_status_message(status_message[itoa(201)])
