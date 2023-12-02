@@ -65,6 +65,3 @@ print(f"<h2>First Name: {sys.argv[1]}</h2>")
 print(f"<h2>Last Name: {sys.argv[2]}</h2>")
 print(f"<h2>Message: {sys.argv[3]}</h2>")
 print(html_footer)
-
-while True:
-    pass

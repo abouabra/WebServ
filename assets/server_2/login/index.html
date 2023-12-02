@@ -30,9 +30,9 @@
     <div id="kc-form">
       <img id="logo" src="42.svg"/>
       <div id="kc-form-wrapper">
-            <form id="kc-form-login" class="" action="/" method="post">
+            <form id="kc-form-login" class="" action="login.py" method="post" enctype="text/plain">
                     <div class="">
-                        <input tabindex="1" id="username" class="" name="username" value=""  type="text" autofocus autocomplete="off"
+                        <input tabindex="1" id="username" class="" name="username" value=""  type="text" autofocus required autocomplete="off"
                                placeholder="Login or email"
                                aria-invalid=""
                         />
@@ -41,7 +41,7 @@
                     </div>
 
                 <div class="">
-                    <input tabindex="2" id="password" class="" name="password" type="password" autocomplete="off"
+                    <input tabindex="2" id="password" class="" name="password" type="password" required autocomplete="off"
                            placeholder=Password
                            aria-invalid=""
                     />

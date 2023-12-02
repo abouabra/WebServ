@@ -5,9 +5,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
-#include <sys/_types/_size_t.h>
 #include <sys/wait.h>
-#include <system_error>
 #include <unistd.h>
 #include <vector>
 
@@ -326,7 +324,7 @@ bool Request::is_location_have_redirection(int index)
 	if(!redirect_url.empty() && location == uri)
 	{
 		redirect_url.insert(0, "/");
-		std::cout << "rediret to: " << redirect_url << std::endl;
+		// std::cout << "rediret to: " << redirect_url << std::endl;
 		response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " + redirect_url + "\r\nContent-Type: text/html\r\nContent-Length: 0\r\nConnection: " + connection + "\r\n\r\n");
 
 		return true;
@@ -455,7 +453,7 @@ void Request::handle_resource_directory(std::string path, int index)
 	// std::cout << "path: " << path << std::endl;
 	if(path[path.length() - 1] != '/')
 	{
-			std::cout << "rediret to: " << uri << std::endl;
+			// std::cout << "rediret to: " << uri << std::endl;
 			response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " +  uri + "/\r\nContent-Type: text/html\r\nContent-Length: 0\r\nConnection: " + connection + "\r\n\r\n");
 			return;
 	}
@@ -522,6 +520,7 @@ bool Request::is_resource_cgi(int index, std::string path)
 
 void Request::serve_cgi(int index, std::string cgi_script_path)
 {
+	// std::cout << "request_body: " << request_body << std::endl;
 	std::string cgi_bin_path = server_config.get_routes()[index].get_cgi_bin();
 	char **argv  = make_argv(request_body, cgi_bin_path, cgi_script_path);
 	// for(int i = 0; argv[i]; i++)
@@ -735,7 +734,7 @@ void Request::serve_upload(int index)
 	// std::string file_path = server_config.get_routes()[index].get_upload_directory() + "/" + filename;
 	std::string file_path = server_config.get_root() + "/" + server_config.get_routes()[index].get_upload_directory() + "/" + filename;
 	// std::cout << "file_path: " << file_path << std::endl;
-	std::cout << "upload to " + file_path << std::endl;
+	// std::cout << "upload to " + file_path << std::endl;
 	std::ofstream file;
 	file.open(file_path.c_str(), std::ios::out | std::ios::binary);
 	if(!file.is_open())

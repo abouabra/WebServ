@@ -1,6 +1,5 @@
 #include "../includes/Server.hpp"
 #include "../includes/Utils.hpp"
-#include <__errc>
 #include <ctime>
 #include <unistd.h>
 
