@@ -192,19 +192,32 @@ void Request::fill_info()
 		request_body = urlDecode(request_body);
 	}
 	// std::cout << "request_body: " << request_body << std::endl;
+	// std::cout << "Cookie: " << cookie << std::endl;
 }
 
 void Request::handelCookies(int index)
 {
-	std::vector<Cookies>::iterator it = cookies_data.begin();
-	while (it != cookies_data.end())
+	(void) index;
+	// std::vector<Cookies>::iterator it = cookies_data.begin();
+	// while (it != cookies_data.end())
+	// {
+	// 	if (cookie == it->id)
+	// 	{
+	// 		if (server_config.get_routes()[index].get_path().find("login"))
+	// 			// std::cout << server_config.get_routes()[index].get_path()<<std::endl;
+	// 	}
+	// 	it++;
+	// }
+
+	std::stringstream ss(cookie);
+	std::string token;
+
+	while(std::getline(ss, token, ';'))
 	{
-		if (cookie == it->id)
-		{
-			if (server_config.get_routes()[index].get_path().find("login"))
-				std::cout << server_config.get_routes()[index].get_path()<<std::endl;
-		}
-		it++;
+		if (token.find("password=") != std::string::npos)
+			cookies_data.password = token.substr(token.find("password=") + 9);
+		else if (token.find("username=") != std::string::npos)
+			cookies_data.username = token.substr(token.find("username=") + 9);
 	}
 }
 
@@ -225,8 +238,7 @@ void Request::parse_request()
 	if(!is_req_well_formed())
 		return;
 	index = get_matched_location_for_request_uri();
-	if (!cookie.empty())
-		handelCookies(index);
+	
 	// if(index == -1)
 	// 	return;
 	if(is_location_have_redirection(index))
@@ -355,7 +367,7 @@ void Request::handle_GET(int index)
 	std::string path = get_requested_resource(index);
 	if(!is_resource_exist(path))
 		return;
-
+	
 	if(is_resource_directory(path))
 		handle_resource_directory(path, index);
 	else
@@ -472,6 +484,13 @@ void Request::handle_resource_directory(std::string path, int index)
 
 void Request::handle_resource_file(std::string path, int index)
 {
+	if (!cookie.empty() && path.find("logged_in") == std::string::npos)
+	{
+		// handelCookies(index);
+		path = "/login/logged_in.html";
+		response.set_raw_response("HTTP/1.1 302 Found\r\nLocation: " +  path + "\r\nContent-Type: text/html\r\nContent-Length: 0\r\nConnection: " + connection + "\r\n\r\n");
+			return;
+	}
 	if(is_resource_cgi(index, path))
 		serve_cgi(index, path);
 	else
@@ -523,14 +542,30 @@ void Request::serve_cgi(int index, std::string cgi_script_path)
 	// std::cout << "request_body: " << request_body << std::endl;
 	std::string cgi_bin_path = server_config.get_routes()[index].get_cgi_bin();
 	char **argv  = make_argv(request_body, cgi_bin_path, cgi_script_path);
+	char **envp = make_envp();
 	// for(int i = 0; argv[i]; i++)
 	// 	std::cout << "argv[" << i << "]: " << argv[i] << std::endl;
 	// std::cout << "cgi_bin_path: " << cgi_bin_path << std::endl;
-	execute_cgi(cgi_bin_path, argv);
+	// for(int i = 0; envp && envp[i]; i++)
+	// 	std::cout << "envp[" << i << "]: " << envp[i] << std::endl;
+	execute_cgi(cgi_bin_path, argv, envp);
 	free_arr(argv);
+	if(envp)
+		free_arr(envp);
 }
-
-void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
+char **Request::make_envp()
+{
+	if(cookie.empty())
+		return NULL;
+	std::string username = "username=" + cookies_data.username;
+	std::string password = "password=" + cookies_data.password;
+	char **envp = new char*[3];
+	envp[0] = strdup(username.c_str());
+	envp[1] = strdup(password.c_str());
+	envp[2] = NULL;
+	return envp;
+}
+void Request::execute_cgi(std::string path_of_cgi_bin, char **argv, char **envp)
 {
 	int pipe_fds[2];
 	int pid;
@@ -566,7 +601,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 		close(pipe_fds[0]);
 		dup2(pipe_fds[1], 1);
 		close(pipe_fds[1]);
-		execve(path_of_cgi_bin.c_str(), argv, NULL);
+		execve(path_of_cgi_bin.c_str(), argv, envp);
 		log("execve failed", ERROR);
 		exit(69);
 	}
@@ -624,12 +659,13 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 			res_body.append(buffer, bytes_read);
 		}
 		close(pipe_fds[0]);
-		response.set_status_code(200)
-			.set_content_type("text/html")
-			.set_connection(connection)
-			.set_body(res_body)
-			.set_status_message(status_message[itoa(200)])
-			.build_raw_response();
+		response.set_raw_response(res_body);
+		// response.set_status_code(200)
+		// 	.set_content_type("text/html")
+		// 	.set_connection(connection)
+		// 	.set_body(res_body)
+		// 	.set_status_message(status_message[itoa(200)])
+		// 	.build_raw_response();
 	}
 }
 

@@ -15,10 +15,10 @@
 class Cookies
 {
 	public:
-		std::string password;
 		std::string username;
-		std::string id;
+		std::string password;
 };
+
 class Request {
 private:
 	std::string request_buff;
@@ -35,7 +35,7 @@ private:
 	std::string accept_encoding;
 	std::string accept_language;
 	std::string cookie;
-	std::vector<Cookies> cookies_data;
+	Cookies cookies_data;
 	std::string transfer_encoding;
 
 
@@ -88,11 +88,12 @@ public:
 	void serve_file(std::string path, int index);
 	bool if_location_support_upload(int index);
 	void serve_upload(int index);
-	void execute_cgi(std::string path_of_cgi_bin, char **argv);
+	void execute_cgi(std::string path_of_cgi_bin, char **argv, char **envp);
 	void delete_item(std::string path);
 	std::string get_connection();//added by baani
 	void set_connection(std::string str);
 	unsigned int get_time();
 	void set_time(unsigned int tm);
 	bool has_write_acces_on_folder(std::string path);
+	char **make_envp();
 };
