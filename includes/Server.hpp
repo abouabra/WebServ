@@ -32,7 +32,7 @@ public:
 	int max_fd;
 
 	int set_up_server(Server_Config &config);
-	struct sockaddr_in set_up_addr(int port);
+	struct sockaddr_in set_up_addr(int port, std::string host);
 	void set_up_fd_sets();
 	void run_server();
 	void accept_new_connection(int server_fd, int index);

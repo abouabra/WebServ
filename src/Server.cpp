@@ -1,6 +1,8 @@
 #include "../includes/Server.hpp"
 #include "../includes/Utils.hpp"
 #include <ctime>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 /*
@@ -44,13 +46,22 @@ Server& Server::Server::operator=(Server const &obj)
 	}
 	return *this;
 }
-struct sockaddr_in Server::set_up_addr(int port)
+struct sockaddr_in Server::set_up_addr(int port, std::string host)
 {
 	struct sockaddr_in addr;
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = INADDR_ANY;
-	// addr.sin_addr.s_addr = inet_addr("1.2.3.4"); // cant be done since we cannot change our ip
+    struct sockaddr_in *tmp;
+    struct addrinfo *result = 0;
+    struct addrinfo hints;
+	std::stringstream ss;
+    std::memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	ss << port;
+	int i = getaddrinfo(host.c_str(), ss.str().c_str(), &hints, &result);
+	guard(i, gai_strerror(i));//test latter
+	tmp = reinterpret_cast<sockaddr_in*>(result->ai_addr);
+	std::memmove(&addr, tmp, sizeof(*tmp));
+	freeaddrinfo(result);
 	return addr;
 }
 
@@ -67,7 +78,7 @@ int Server::set_up_server(Server_Config &config)
 	int status = setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
 	guard(status , "Error setting socket options");
 
-	struct sockaddr_in addr = set_up_addr(config.get_port());
+	struct sockaddr_in addr = set_up_addr(config.get_port(), config.get_host());
 	status = bind(server_fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr));
 
 	guard(status, "Error binding socket");
