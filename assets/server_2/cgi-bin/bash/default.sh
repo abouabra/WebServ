@@ -63,9 +63,18 @@ html_footer=$(cat <<EOF
 EOF
 )
 
-# Print the formatted arguments with HTML structure
-echo "$html_header"
-echo "<h2>First Name: $1</h2>"
-echo "<h2>Last Name: $2</h2>"
-echo "<h2>Message: $3</h2>"
-echo "$html_footer"
+
+res="HTTP/1.1 200 OK\r\n"
+res+="Content-Type: text/html\r\n"
+
+body="$html_header"
+body+="<h2>First Name: $1</h2>"
+body+="<h2>Last Name: $2</h2>"
+body+="<h2>Message: $3</h2>"
+body+="$html_footer"
+
+res+="Content-Length: ${#body}\r\n"
+res+="\r\n"
+res+="$body"
+
+echo -ne "$res"

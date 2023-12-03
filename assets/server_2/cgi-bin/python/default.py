@@ -2,7 +2,7 @@
 import sys
 
 if len(sys.argv) != 4:
-	print("Usage: python3 default.py <first_name> <last_name> <message>")
+	print("Usage: python3 default.py <first_name> <last_name> <message>", file=sys.stderr)
 	sys.exit(1)
 
 # HTML header
@@ -59,9 +59,15 @@ html_footer = """
 </html>
 """
 
-# Print the formatted arguments
-print(html_header)
-print(f"<h2>First Name: {sys.argv[1]}</h2>")
-print(f"<h2>Last Name: {sys.argv[2]}</h2>")
-print(f"<h2>Message: {sys.argv[3]}</h2>")
-print(html_footer)
+res = "HTTP/1.1 200 OK\r\n"
+res += "Content-Type: text/html\r\n"
+
+body = html_header
+body += f"<h2>First Name: {sys.argv[1]}</h2>"
+body += f"<h2>Last Name: {sys.argv[2]}</h2>"
+body += f"<h2>Message: {sys.argv[3]}</h2>"
+body += html_footer
+
+res += "Content-Length: " + str(len(body)) + "\r\n\r\n"
+res += body
+print(res)
