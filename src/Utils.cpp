@@ -12,6 +12,31 @@ void guard(int status, std::string message)
 	}
 }
 
+std::string  addr_to_ip(in_addr_t number)
+{
+	std::string ip;
+    std::stringstream ss;
+    std::string nm;
+    number = ntohl(number);
+    ss << ((number >> 24) & 255);
+    ss >> nm;
+    ss.clear();
+    ip += nm + '.';
+    ss << ((number >> 16) & 255);
+    ss >> nm;
+    ss.clear();
+    ip += nm + '.';
+    ss << ((number >> 8) & 255);
+    ss >> nm;
+    ss.clear();
+    ip += nm + '.';
+    ss << (number & 255);
+    ss >> nm;
+    ss.clear();
+    ip += nm;
+	return ip;
+}
+
 void log(std::string message, int level)
 {
 	time_t current;

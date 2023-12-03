@@ -52,12 +52,10 @@ struct sockaddr_in Server::set_up_addr(int port, std::string host)
     struct sockaddr_in *tmp;
     struct addrinfo *result = 0;
     struct addrinfo hints;
-	std::stringstream ss;
     std::memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	ss << port;
-	int i = getaddrinfo(host.c_str(), ss.str().c_str(), &hints, &result);
+	int i = getaddrinfo(host.c_str(), itoa(port).c_str(), &hints, &result);
 	guard(i, gai_strerror(i));//test latter
 	tmp = reinterpret_cast<sockaddr_in*>(result->ai_addr);
 	std::memmove(&addr, tmp, sizeof(*tmp));
@@ -85,8 +83,7 @@ int Server::set_up_server(Server_Config &config)
 
 	status = listen(server_fd, 1024);
 	guard(status, "Error listening on socket");
-
-	log("listening on 0.0.0.0:" + itoa(config.get_port()), INFO);
+	log("listening on " + addr_to_ip(addr.sin_addr.s_addr) + ':' + itoa(config.get_port()), INFO);
 	if(server_fd > max_fd)
 		max_fd = server_fd;
 
@@ -177,7 +174,7 @@ void Server::accept_new_connection(int server_fd, int index)
 	client.set_server_config(conf.servers[index]);
 	client.set_timer(time(NULL));
 	clients.push_back(client);
-	log("New connection on: " + itoa(client_fd), INFO);
+	log("New connection on: " + addr_to_ip(client_addr.sin_addr.s_addr) + ':' + itoa(client_addr.sin_port) + " socket: " + itoa(client_fd), INFO);
 }
 
 void Server::close_connection(Client &client, int index)
