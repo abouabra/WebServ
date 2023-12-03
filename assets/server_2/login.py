@@ -7,6 +7,6 @@ if len(sys.argv) == 4:
     res += f"Set-Cookie: username={sys.argv[1]}\n"
     res += f"Set-Cookie: password={sys.argv[2]}\n"
 
-res += "Location: /login/logged_in.html\r\n"
+res += "Location: /home/\r\n"
 res += "Content-Length: 0\r\n\r\n"
 print(res)

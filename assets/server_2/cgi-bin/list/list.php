@@ -1,3 +1,6 @@
+<?php
+
+$html = <<<HTML
 <!DOCTYPE html>
 <html>
 <head>
@@ -63,7 +66,8 @@
 <body>
     <h1>Files in Current Directory</h1>
     <ul>
-        <?php
+HTML;
+
         $dir = dirname(__FILE__);
         $files = scandir($dir);
 
@@ -72,10 +76,17 @@
 
         // Display files in a list
         foreach ($files as $file) {
-            echo "<li>$file</li>";
-
+            $html .= "<li>$file</li>";
         }
-        ?>
+$html .= <<<HTML
     </ul>
 </body>
 </html>
+HTML;
+
+$res = "HTTP/1.1 200 OK\r\n";
+$res .= "Content-Type: text/html\r\n";
+$res .= "Content-Length: " . strlen($html) . "\r\n\r\n";
+$res .= $html;
+echo $res;
+?>

@@ -238,7 +238,7 @@ Server_Config get_server_config(std::stringstream &ss)
 		ss_2 >> value;
 		if (key.empty() || point.empty())
 			throw(std::runtime_error("Invalide server_config syntax"));
-		if (key == "host" && value == "localhost")
+		if (key == "host" && ss_2)
 			new_serve.set_host(value);
 		else if (key == "port" && ss_2)
 		{

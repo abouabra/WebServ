@@ -12,12 +12,12 @@
 #include <dirent.h>
 #include <signal.h>
 
-class Cookies
-{
-	public:
-		std::string username;
-		std::string password;
-};
+// class Cookies
+// {
+// 	public:
+// 		std::string username;
+// 		std::string password;
+// };
 
 class Request {
 private:
@@ -35,7 +35,7 @@ private:
 	std::string accept_encoding;
 	std::string accept_language;
 	std::string cookie;
-	Cookies cookies_data;
+	// Cookies cookies_data;
 	std::string transfer_encoding;
 
 
@@ -81,19 +81,18 @@ public:
 	void handle_resource_directory(std::string path, int index);
 	void handle_resource_directory_for_DELETE(std::string path, int index);
 	void handle_resource_file(std::string path, int index);
-	void handelCookies(int index);
 	void handle_directory_listing(std::string path, int index);
 	bool is_resource_cgi(int index, std::string path);
 	void serve_cgi(int index, std::string path);
 	void serve_file(std::string path, int index);
 	bool if_location_support_upload(int index);
 	void serve_upload(int index);
-	void execute_cgi(std::string path_of_cgi_bin, char **argv, char **envp);
+	void execute_cgi(std::string path_of_cgi_bin, char **argv);
 	void delete_item(std::string path);
 	std::string get_connection();//added by baani
 	void set_connection(std::string str);
 	unsigned int get_time();
 	void set_time(unsigned int tm);
 	bool has_write_acces_on_folder(std::string path);
-	char **make_envp();
+	int valid_cookie();
 };

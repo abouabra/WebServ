@@ -195,32 +195,6 @@ void Request::fill_info()
 	// std::cout << "Cookie: " << cookie << std::endl;
 }
 
-void Request::handelCookies(int index)
-{
-	(void) index;
-	// std::vector<Cookies>::iterator it = cookies_data.begin();
-	// while (it != cookies_data.end())
-	// {
-	// 	if (cookie == it->id)
-	// 	{
-	// 		if (server_config.get_routes()[index].get_path().find("login"))
-	// 			// std::cout << server_config.get_routes()[index].get_path()<<std::endl;
-	// 	}
-	// 	it++;
-	// }
-
-	std::stringstream ss(cookie);
-	std::string token;
-
-	while(std::getline(ss, token, ';'))
-	{
-		if (token.find("password=") != std::string::npos)
-			cookies_data.password = token.substr(token.find("password=") + 9);
-		else if (token.find("username=") != std::string::npos)
-			cookies_data.username = token.substr(token.find("username=") + 9);
-	}
-}
-
 std::string Request::get_connection()
 {
 	return connection;
@@ -482,13 +456,19 @@ void Request::handle_resource_directory(std::string path, int index)
 	}
 }
 
+int Request::valid_cookie()
+{
+	if (cookie.empty())
+		return 0;
+	if (cookie.find("username=") == std::string::npos || cookie.find("password=") == std::string::npos)
+		return 0;
+	return 1;
+}
 void Request::handle_resource_file(std::string path, int index)
 {
-	if (!cookie.empty() && path.find("logged_in") == std::string::npos)
+	if (valid_cookie() && uri == "/")
 	{
-		// handelCookies(index);
-		path = "/login/logged_in.html";
-		response.set_raw_response("HTTP/1.1 302 Found\r\nLocation: " +  path + "\r\nContent-Type: text/html\r\nContent-Length: 0\r\nConnection: " + connection + "\r\n\r\n");
+		response.set_raw_response("HTTP/1.1 302 Found\r\nLocation: /home/\r\nContent-Type: text/html\r\nContent-Length: 0\r\nConnection: " + connection + "\r\n\r\n");
 			return;
 	}
 	if(is_resource_cgi(index, path))
@@ -542,30 +522,15 @@ void Request::serve_cgi(int index, std::string cgi_script_path)
 	// std::cout << "request_body: " << request_body << std::endl;
 	std::string cgi_bin_path = server_config.get_routes()[index].get_cgi_bin();
 	char **argv  = make_argv(request_body, cgi_bin_path, cgi_script_path);
-	char **envp = make_envp();
 	// for(int i = 0; argv[i]; i++)
 	// 	std::cout << "argv[" << i << "]: " << argv[i] << std::endl;
 	// std::cout << "cgi_bin_path: " << cgi_bin_path << std::endl;
-	// for(int i = 0; envp && envp[i]; i++)
-	// 	std::cout << "envp[" << i << "]: " << envp[i] << std::endl;
-	execute_cgi(cgi_bin_path, argv, envp);
+
+	execute_cgi(cgi_bin_path, argv);
 	free_arr(argv);
-	if(envp)
-		free_arr(envp);
 }
-char **Request::make_envp()
-{
-	if(cookie.empty())
-		return NULL;
-	std::string username = "username=" + cookies_data.username;
-	std::string password = "password=" + cookies_data.password;
-	char **envp = new char*[3];
-	envp[0] = strdup(username.c_str());
-	envp[1] = strdup(password.c_str());
-	envp[2] = NULL;
-	return envp;
-}
-void Request::execute_cgi(std::string path_of_cgi_bin, char **argv, char **envp)
+
+void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 {
 	int pipe_fds[2];
 	int pid;
@@ -601,7 +566,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv, char **envp)
 		close(pipe_fds[0]);
 		dup2(pipe_fds[1], 1);
 		close(pipe_fds[1]);
-		execve(path_of_cgi_bin.c_str(), argv, envp);
+		execve(path_of_cgi_bin.c_str(), argv, NULL);
 		log("execve failed", ERROR);
 		exit(69);
 	}

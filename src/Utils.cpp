@@ -12,29 +12,29 @@ void guard(int status, std::string message)
 	}
 }
 
-std::string  addr_to_ip(in_addr_t number)
+
+std::string addr_to_ip(in_addr_t number)
 {
-	std::string ip;
-    std::stringstream ss;
-    std::string nm;
+    std::string ip;
+    unsigned char bytes[4];
+
     number = ntohl(number);
-    ss << ((number >> 24) & 255);
-    ss >> nm;
-    ss.clear();
-    ip += nm + '.';
-    ss << ((number >> 16) & 255);
-    ss >> nm;
-    ss.clear();
-    ip += nm + '.';
-    ss << ((number >> 8) & 255);
-    ss >> nm;
-    ss.clear();
-    ip += nm + '.';
-    ss << (number & 255);
-    ss >> nm;
-    ss.clear();
-    ip += nm;
-	return ip;
+
+    bytes[0] = (number >> 24) & 255;
+    bytes[1] = (number >> 16) & 255;
+    bytes[2] = (number >> 8) & 255;
+    bytes[3] = number & 255;
+
+    for (int i = 0; i < 4; ++i)
+    {
+        std::stringstream ss;
+        ss << static_cast<unsigned int>(bytes[i]); // Convert byte to string
+        ip += ss.str();
+        if (i != 3)
+            ip += '.'; // Add dot after each byte except the last one
+    }
+
+    return ip;
 }
 
 void log(std::string message, int level)

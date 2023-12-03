@@ -73,3 +73,5 @@ $res .= "Content-Type: text/html\r\n";
 $res .= "Content-Length: " . strlen($html) . "\r\n\r\n";
 $res .= $html;
 echo $res;
+
+?>

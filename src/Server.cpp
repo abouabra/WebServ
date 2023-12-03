@@ -174,7 +174,7 @@ void Server::accept_new_connection(int server_fd, int index)
 	client.set_server_config(conf.servers[index]);
 	client.set_timer(time(NULL));
 	clients.push_back(client);
-	log("New connection on: " + addr_to_ip(client_addr.sin_addr.s_addr) + ':' + itoa(client_addr.sin_port) + " socket: " + itoa(client_fd), INFO);
+	log("New connection on: " + addr_to_ip(client_addr.sin_addr.s_addr) + ':' + itoa(conf.servers[index].get_port()) + " socket: " + itoa(client_fd), INFO);
 }
 
 void Server::close_connection(Client &client, int index)
@@ -190,7 +190,7 @@ int Server::check_for_timeout(Client &client, int index)
 {
 	if(time(NULL) - client.get_timeout() > client.get_request().get_time())
 	{
-		std::cout << "------timeout-------"<<std::endl;
+		log("Timeout on: " + itoa(client.get_socket_fd()), WARNING);
 		close_connection(client, index);
 		return 1;
 	}
