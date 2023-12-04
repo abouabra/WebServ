@@ -5,6 +5,7 @@
 #include <fstream>
 #include <cstring>
 #include <netinet/in.h>
+#include <ctime>
 
 enum log_level
 {

@@ -168,7 +168,7 @@ void Server::accept_new_connection(int server_fd, int index)
 
 	Client client(client_fd, client_addr);
 	client.set_server_config(conf.servers[index]);
-	client.set_timer(time(NULL));
+	client.set_timer(std::time(NULL));
 	clients.push_back(client);
 	log("New connection on: " + addr_to_ip(client_addr.sin_addr.s_addr) + ':' + itoa(conf.servers[index].get_port()) + " socket: " + itoa(client_fd), INFO);
 }
@@ -184,7 +184,7 @@ void Server::close_connection(Client &client, int index)
 
 int Server::check_for_timeout(Client &client, int index)
 {
-	if(time(NULL) - client.get_timeout() > client.get_request().get_time())
+	if(std::time(NULL) - client.get_timeout() > client.get_request().get_time())
 	{
 		log("Timeout on: " + itoa(client.get_socket_fd()), WARNING);
 		close_connection(client, index);
@@ -197,7 +197,7 @@ int Server::read_from_client(Client &client, int i)
 {
 	int size = 1024;
 	char buffer[size];
-	client.set_timer(time(NULL));
+	client.set_timer(std::time(NULL));
 
 	// log("Reading from socket: " + itoa(client.get_socket_fd()), WARNING);
 	std::memset(buffer, 0, sizeof(buffer));
@@ -223,7 +223,7 @@ int Server::read_from_client(Client &client, int i)
 
 int Server::write_to_client(Client &client, int index)
 {
-	client.set_timer(time(NULL));
+	client.set_timer(std::time(NULL));
 	std::string response_body = client.get_request().get_response().get_raw_response();
 	// log("Sending to socket: " + itoa(client.get_socket_fd()), WARNING);
 	int bytes_sent = send(client.get_socket_fd(), response_body.c_str(), response_body.length(), 0);

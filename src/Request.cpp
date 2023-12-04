@@ -1,6 +1,5 @@
 #include "../includes/Request.hpp"
 #include "../includes/Config.hpp"
-
 Request::Request()
 {
 	status_message["100"] = " Continue";
@@ -569,10 +568,10 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 	else
 	{
 		close(pipe_fds[1]);
-		time_t start_time = time(NULL);
+		time_t start_time = std::time(NULL);
 		while (waitpid(pid, &status, WNOHANG) == 0)
 		{
-			if (time(NULL) - start_time > time_out)
+			if (std::time(NULL) - start_time > time_out)
 			{
 				kill(pid, SIGTERM);
 				close(pipe_fds[0]);

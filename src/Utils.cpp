@@ -40,7 +40,7 @@ void log(std::string message, int level)
 	time_t current;
 	char buffer[100];
 
-	current = time(NULL);
+	current = std::time(NULL);
 	std::memset(buffer, 0, sizeof(buffer));
 	strftime(buffer, 100, "[%Y-%m-%d %H:%M:%S]", localtime(&current));
 

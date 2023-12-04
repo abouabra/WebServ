@@ -13,6 +13,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <cstdlib>
+#include <ctime>
 
 
 class Request {
