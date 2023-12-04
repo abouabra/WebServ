@@ -57,12 +57,14 @@ std::string Config::read_config(std::string &config_file)
 void remove_comment(std::string &line)
 {
 	size_t end;
-	end = line.find_first_of("#");
+	// std::cout << line << std::endl;
+	end = line.find('#');
 	if (end != std::string::npos)
-		line.erase(end);
+		line.erase(end, line.size());
+	// remove space from back of line
 	end = line.find_last_not_of(" \t");
 	if (end != std::string::npos)
-		line.erase(end+1);
+		line.erase(end + 1);
 }
 
 bool check_value(std::string value)
@@ -90,8 +92,10 @@ Routes get_server_route(std::stringstream &ss)
 {
 	Routes route;
 	std::string line;
+	std::string line_before;
 	while (std::getline(ss, line))
 	{
+		line_before = line;
 		remove_comment(line);
 		if (line.empty() || ft_trim(line, "\t").empty())
 			continue;
@@ -110,7 +114,7 @@ Routes get_server_route(std::stringstream &ss)
 		if (dash == "server" || dash == "route")
 		{
 			int i = ss.tellg();
-			ss.seekg(i - line.size() - 1);
+			ss.seekg(i - line_before.size() - 1);
 			break;
 		}
 		if (dash != "-" || value.empty() || key.empty() || point != ":")
@@ -195,19 +199,23 @@ Server_Config get_server_config(std::stringstream &ss)
 {
 	Server_Config new_serve;
 	std::string line;
+	std::string line_before;
 	while (std::getline(ss, line))
 	{
+		line_before = line;
 		remove_comment(line);
 		if(line == "server")
 		{
 			int i = ss.tellg();
-			ss.seekg(i - line.size() - 1, std::ios::beg);
+			ss.seekg(i - line_before.size() - 1, std::ios::beg);
 			break;
 		}
 		if (line.empty())
 			continue;
 		if (line[0] != '\t')
+		{
 			throw(std::runtime_error("Invalid config server"));
+		}
 		std::stringstream ss_2(line);
 		std::string key;
 		std::string point;
@@ -235,10 +243,10 @@ Server_Config get_server_config(std::stringstream &ss)
 		}
 		else if (key == "root" && ss_2)
 		{
-			check_multiple(value, ss_2);
 			if(value[value.size() - 1] == '/')
 				throw std::runtime_error("Invalid config root");
 			new_serve.set_root(value);
+			check_multiple(value, ss_2);
 		}
 		else if (key == "error_pages" && ss_2)
 		{
@@ -301,12 +309,15 @@ void Config::parse_config(std::string &config_file)
 	while(std::getline(ss, line))
 	{
 
-		if(line != "server" && line[0] != '\t')
-			throw(std::runtime_error("Invalid config syntax"));
-
+		remove_comment(line);
 		if (line.empty())
 			continue;
-		remove_comment(line);
+
+		if(line != "server" && line[0] != '\t')
+		{
+			std::cout << line << std::endl;
+			throw(std::runtime_error("Invalid config syntax33"));
+		}
 		if (line == "server")
 		{
 			Server_Config server = get_server_config(ss);
@@ -318,7 +329,7 @@ void Config::parse_config(std::string &config_file)
 	{
 		for (size_t j = i + 1; j < servers.size(); j++)
 		{
-			if (servers[i].get_port() == servers[j].get_port())
+			if (servers[i].get_port() == servers[j].get_port() && servers[i].get_host() == servers[j].get_host())
 				throw(std::runtime_error("Invalid config server port duplicated"));
 		}
 	}
