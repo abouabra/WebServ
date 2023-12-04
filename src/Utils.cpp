@@ -1,14 +1,12 @@
 #include "../includes/Utils.hpp"
-#include <algorithm>
-#include <sstream>
 
 void guard(int status, std::string message)
 {
-	message = message + "\n" + strerror(errno);
+	message = message + "\n" + std::strerror(errno);
 	if(status < 0)
 	{
-		log(message, ERROR);
-		throw std::exception();
+		// log(message, ERROR);
+		throw std::runtime_error(message);
 	}
 }
 
@@ -151,6 +149,76 @@ char **make_argv(std::string str, std::string cgi_bin_path, std::string cgi_bin)
 void free_arr(char **arr)
 {
 	for(int i = 0; arr[i]; i++)
-		free(arr[i]);
+		delete arr[i];
 	delete [] arr;
+}
+
+std::string ft_trim(std::string str, std::string charset)
+{
+	std::string::size_type pos = str.find_last_not_of(charset);
+	if(pos != std::string::npos)
+	{
+		str.erase(pos + 1);
+		pos = str.find_first_not_of(charset);
+		if(pos != std::string::npos)
+			str.erase(0, pos);
+	}
+	else
+		str.erase(str.begin(), str.end());
+	return str;
+}
+
+int is_valid_ip(std::string ip)
+{
+	std::stringstream ss(ip);
+	std::string token;
+	int count = 0;
+	while(std::getline(ss, token, '.'))
+	{
+		if(token.length() > 3 || token.length() == 0)
+			return 0;
+		if(token.length() > 1 && token[0] == '0')
+			return 0;
+		for(size_t i = 0; i < token.length(); i++)
+		{
+			if(!isdigit(token[i]))
+				return 0;
+		}
+		std::stringstream tmp(token);
+		int num;
+		tmp >> num;
+		if(num < 0 || num > 255)
+			return 0;
+		count++;
+	}
+	if(count != 4)
+		return 0;
+	return 1;
+}
+
+int ft_atoi(std::string str)
+{
+	int num = 0;
+	int sign = 1;
+	if(str[0] == '-')
+	{
+		sign = -1;
+		str.erase(0, 1);
+	}
+	for(size_t i = 0; i < str.length(); i++)
+	{
+		if(!isdigit(str[i]))
+			return -1;
+		num = num * 10 + (str[i] - '0');
+	}
+	return num * sign;
+}
+
+void check_multiple(std::string &value, std::stringstream &ss_2)
+{
+	int count = 1;
+	while (ss_2 >> value)
+		count++;
+	if(count != 1)
+		throw(std::runtime_error("Invalid config number of arguments"));
 }

@@ -1,10 +1,5 @@
 #include "../includes/Config.hpp"
-#include <cctype>
-#include <exception>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <vector>
+
 /*
 
 	CONFIG CLASS
@@ -98,8 +93,9 @@ Routes get_server_route(std::stringstream &ss)
 	while (std::getline(ss, line))
 	{
 		remove_comment(line);
-		if (line.empty())
+		if (line.empty() || ft_trim(line, "\t").empty())
 			continue;
+		
 		std::stringstream ss_2(line);
 		std::string key;
 		std::string point;
@@ -109,25 +105,22 @@ Routes get_server_route(std::stringstream &ss)
 		ss_2 >> key;
 		ss_2 >> point;
 		ss_2 >> value;
-		if (line[0] != '\t' || (line[1] && line[1] != '\t'))
+		if (count_num(line, '\t') != 1 && dash == "route")
+			throw(std::runtime_error("Invalid config route"));
+		if (dash == "server" || dash == "route")
 		{
-			if (dash == "route" || dash == "server")
-			{
-				int i = ss.tellg();
-				ss.seekg(i - line.size() - 1);
-				break;
-			}
-			throw(std::runtime_error("Invalide server_config route"));
+			int i = ss.tellg();
+			ss.seekg(i - line.size() - 1);
+			break;
 		}
-		if (dash != "-" || value.empty() || point != ":")
-			throw(std::runtime_error("Invalide server_config route"));
+		if (dash != "-" || value.empty() || key.empty() || point != ":")
+			throw(std::runtime_error("Invalid config route"));
 		if (key == "path")
 		{
+			if (value[value.size() - 1] == '/' && value != "/")
+				throw(std::runtime_error("Invalid config path"));
 			route.set_path(value);
-			ss_2 >> value;
-			if (value.empty())
-				throw(std::runtime_error("Invalide server_config multiple route path"));
-
+			check_multiple(value, ss_2);
 		}
 		else if (key == "methods")
 		{
@@ -138,20 +131,19 @@ Routes get_server_route(std::stringstream &ss)
 					if (check_duplicated(route.get_methods(), value))
 						route.get_methods().push_back(value);
 					else
-						throw(std::runtime_error("Invalide server_config method duplicated"));
+						throw(std::runtime_error("Invalid config method duplicated"));
 				}
 				else
-					throw(std::runtime_error("Invalide server_config method"));
+					throw(std::runtime_error("Invalid config method"));
 				ss_2 >> value;
 				if (ss_2 && value != "|")
-					throw(std::runtime_error("Invalide server_config method separator"));
+					throw(std::runtime_error("Invalid config method separator"));
 			} while (ss_2 >> value);
 		}
 		else if (key == "default_file")
 		{
 			route.set_default_file(value);
-			if (ss_2 >> value)
-				throw(std::runtime_error("Invalide server_config default_file"));
+			check_multiple(value, ss_2);
 		}
 		else if (key == "directory_listing")
 		{
@@ -160,21 +152,20 @@ Routes get_server_route(std::stringstream &ss)
 			else if (value == "true")
 				route.set_directory_listing(true);
 			else
-				throw(std::runtime_error("Invalide server_config directory_listing"));
-			if (ss_2 >> value)
-				throw(std::runtime_error("Invalide server_config directory_listing"));
+				throw(std::runtime_error("Invalid config directory_listing"));
+			check_multiple(value, ss_2);
 		}
 		else if (key == "cgi_bin")
 		{
 			route.set_cgi_bin(value);
-			if (ss_2 >> value)
-				throw(std::runtime_error("Invalide server_config cgi_bin"));
+			check_multiple(value, ss_2);
 		}
 		else if (key == "cgi_extension")
 		{
 			route.set_cgi_extension(value);
-			if (ss_2 >> value)
-				throw(std::runtime_error("Invalide server_config cgi_extension"));
+			if( value[0] != '.')
+				throw(std::runtime_error("Invalid config cgi_extension"));
+			check_multiple(value, ss_2);
 		}
 		else if (key == "upload_enabled")
 		{
@@ -183,34 +174,21 @@ Routes get_server_route(std::stringstream &ss)
 			else if (value == "true")
 				route.set_upload_enabled(true);
 			else
-				throw(std::runtime_error("Invalide server_config upload_enabled"));
-			if (ss_2 >> value)
-				throw(std::runtime_error("Invalide server_config upload_enabled"));
+				throw(std::runtime_error("Invalid config upload_enabled"));
+			check_multiple(value, ss_2);
 		}
 		else if (key == "upload_directory")
 		{
 			route.set_upload_directory(value);
-			if (ss_2 >> value)
-				throw(std::runtime_error("Invalide server_config upload_directory"));
+			check_multiple(value, ss_2);
 		}
 		else if (key == "redirect_url")
 		{
 			route.set_redirect_url(value);
-			if (ss_2 >> value)
-				throw(std::runtime_error("Invalide server_config redirect_url"));
+			check_multiple(value, ss_2);
 		}
 	}
 	return route;
-}
-
-int is_number(std::string &str)
-{
-	std::stringstream ss(str);
-	int number;
-	if (str.find_first_not_of("0123456789") != std::string::npos)
-		throw(std::runtime_error("Invalide server_config port"));
-	ss >> number;
-	return (number);
 }
 
 Server_Config get_server_config(std::stringstream &ss)
@@ -226,8 +204,10 @@ Server_Config get_server_config(std::stringstream &ss)
 			ss.seekg(i - line.size() - 1, std::ios::beg);
 			break;
 		}
+		if (line.empty())
+			continue;
 		if (line[0] != '\t')
-			throw(std::runtime_error("Invalide server_config indetation"));
+			throw(std::runtime_error("Invalid config server"));
 		std::stringstream ss_2(line);
 		std::string key;
 		std::string point;
@@ -237,50 +217,68 @@ Server_Config get_server_config(std::stringstream &ss)
 		ss_2 >> point;
 		ss_2 >> value;
 		if (key.empty() || point.empty())
-			throw(std::runtime_error("Invalide server_config syntax"));
+			throw(std::runtime_error("Invalid config syntax"));
+		if (key != "route" && value.empty())
+			throw(std::runtime_error("Invalid config syntax"));
 		if (key == "host" && ss_2)
+		{
+			if(!is_valid_ip(value))
+				throw(std::runtime_error("Invalid config host"));
 			new_serve.set_host(value);
+		}
 		else if (key == "port" && ss_2)
 		{
-			number = is_number(value);
+			if (value.find_first_not_of("0123456789") != std::string::npos)
+				throw(std::runtime_error("Invalid config port"));
+			number = ft_atoi(value);
 			new_serve.set_port(number);
 		}
 		else if (key == "root" && ss_2)
+		{
+			check_multiple(value, ss_2);
+			if(value[value.size() - 1] == '/')
+				throw std::runtime_error("Invalid config root");
 			new_serve.set_root(value);
+		}
 		else if (key == "error_pages" && ss_2)
 		{
 			std::vector<std::string> page;
 			do
 			{
-				if (value.find(".html") == std::string::npos)
-				{
-					throw(std::runtime_error("Invalide server_config error_page"));
-				}
+				if (value.empty())
+					throw(std::runtime_error("Invalid config error_page"));
+				size_t pos = value.find(".html");
+				if (pos == std::string::npos)
+					throw(std::runtime_error("Invalid config error_page"));
+				std::string code = value.substr(0, pos);
+				if (code.empty() || code.find_first_not_of("0123456789") != std::string::npos)
+					throw(std::runtime_error("Invalid config error_page"));
 				page.push_back(value);
 				ss_2 >> value;
 				if (ss_2 && value != "|")
-				{
-					throw(std::runtime_error("Invalide server_config error_page"));
-				}
+					throw(std::runtime_error("Invalid config error_page"));
 			} while (ss_2 >> value);
 			new_serve.set_error_pages(page);
 		}
 		else if (key == "client_body_limit")
 		{
-			number = is_number(value);
-			if (number == -1)
-				throw(std::runtime_error("Invalide server_config client_body_limit"));
+			if (value.find_first_not_of("0123456789") != std::string::npos)
+				throw(std::runtime_error("Invalid config client_body_limit"));
+			number = ft_atoi(value);
+			if (number < 0)
+				throw(std::runtime_error("Invalid config client_body_limit"));
 			new_serve.set_client_body_limit(number);
 		}
 		else if (key == "route" && !ss_2)
 		{
-			Routes route;
-			route = get_server_route(ss);
+			if (count_num(line, '\t') != 1)
+				throw(std::runtime_error("Invalid config route"));
+			Routes route = get_server_route(ss);
 			new_serve.get_routes().push_back(route);
 		}
-		else if (key.empty())
-			throw(std::runtime_error("Invalide server_config"));
 	}
+	if (new_serve.get_host().empty() || new_serve.get_port() == 0 || new_serve.get_root().empty())
+		throw(std::runtime_error("Invalid config server"));
 	return new_serve;
 }
 
@@ -302,17 +300,28 @@ void Config::parse_config(std::string &config_file)
 	std::string line;
 	while(std::getline(ss, line))
 	{
+
+		if(line != "server" && line[0] != '\t')
+			throw(std::runtime_error("Invalid config syntax"));
+
 		if (line.empty())
 			continue;
 		remove_comment(line);
 		if (line == "server")
 		{
-			Server_Config server;
-			server = get_server_config(ss);
+			Server_Config server = get_server_config(ss);
 			servers.push_back(server);
 		}
 	}
 
+	for (size_t i = 0; i < servers.size(); i++)
+	{
+		for (size_t j = i + 1; j < servers.size(); j++)
+		{
+			if (servers[i].get_port() == servers[j].get_port())
+				throw(std::runtime_error("Invalid config server port duplicated"));
+		}
+	}
 }
 
 void Config::print_config()
@@ -355,7 +364,7 @@ void Config::print_config()
 Server_Config::Server_Config()
 {
 	port = 0;
-	client_body_limit = 0;
+	client_body_limit = 1000000;
 }
 
 Server_Config::~Server_Config()

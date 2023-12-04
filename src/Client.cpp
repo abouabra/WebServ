@@ -1,6 +1,4 @@
 #include "../includes/Client.hpp"
-#include <cstddef>
-#include <iostream>
 
 Client::~Client()
 {

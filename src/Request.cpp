@@ -1,13 +1,5 @@
 #include "../includes/Request.hpp"
-#include <cstddef>
-#include <cstdlib>
-#include <iostream>
-#include <ostream>
-#include <sstream>
-#include <string>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <vector>
+#include "../includes/Config.hpp"
 
 Request::Request()
 {
@@ -423,7 +415,7 @@ void Request::handle_resource_directory_for_DELETE(std::string path, int index)
 			.set_status_message(status_message[itoa(409)])
 			.build_raw_response();
 	}
-	if(!server_config.get_routes()[index].get_cgi_bin().empty())
+	else if(is_resource_cgi(index, path))
 		serve_cgi(index, path);
 	else
 		delete_item(path);
@@ -449,7 +441,7 @@ void Request::handle_resource_directory(std::string path, int index)
 			return;
 	}
 	if(server_config.get_routes()[index].get_directory_listing() && !server_config.get_routes()[index].get_path().empty())
-		handle_directory_listing(path, index);
+		handle_directory_listing(path);
 	else
 	{
 		response.set_status_code(403)
@@ -479,12 +471,11 @@ void Request::handle_resource_file(std::string path, int index)
 	if(is_resource_cgi(index, path))
 		serve_cgi(index, path);
 	else
-		serve_file(path, index);
+		serve_file(path);
 }
 
-void Request::handle_directory_listing(std::string path, int index)
+void Request::handle_directory_listing(std::string path)
 {
-	(void) index;
 	std::string res_body = "<html><title>Directory listing for " + uri + "</title><body><h1>Directory listing for " + uri + "</h1><hr><ul>";
 	
 	DIR *dir;
@@ -639,9 +630,8 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 	}
 }
 
-void Request::serve_file(std::string path, int index)
+void Request::serve_file(std::string path)
 {
-	(void) index;
 	size_t pos = path.find_last_of(".");
 	if(pos == std::string::npos)
 	{
@@ -724,10 +714,8 @@ bool Request::if_location_support_upload(int index)
 		return true;
 	return false;
 }
-
 void Request::serve_upload(int index)
 {
-	(void) index;
 	// std::cout << request_body << std::endl;
 	std::string filename = request_body.substr(request_body.find("filename=\"") + 10);
 	filename = filename.substr(0, filename.find("\""));

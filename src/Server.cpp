@@ -1,9 +1,5 @@
 #include "../includes/Server.hpp"
 #include "../includes/Utils.hpp"
-#include <ctime>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
 
 /*
 
@@ -227,7 +223,6 @@ int Server::read_from_client(Client &client, int i)
 
 int Server::write_to_client(Client &client, int index)
 {
-	(void) index;
 	client.set_timer(time(NULL));
 	std::string response_body = client.get_request().get_response().get_raw_response();
 	// log("Sending to socket: " + itoa(client.get_socket_fd()), WARNING);
@@ -238,6 +233,5 @@ int Server::write_to_client(Client &client, int index)
 		close_connection(client, index);
 	else
 		FD_CLR(client.get_socket_fd(), &writes);
-	// close_connection(client, index);
 	return 0;
 }
