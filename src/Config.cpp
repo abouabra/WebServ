@@ -88,6 +88,16 @@ bool check_duplicated(std::vector<std::string> method, std::string value)
 	return true;
 }
 
+bool is_valid_route_key(std::string key)
+{
+	std::string valid_key[] = {"path", "methods", "default_file", "directory_listing", "cgi_bin", "cgi_extension", "upload_enabled", "upload_directory", "redirect_url"};
+	for (int i = 0; i < 9; i++)
+	{
+		if (key == valid_key[i])
+			return true;
+	}
+	return false;
+}
 Routes get_server_route(std::stringstream &ss)
 {
 	Routes route;
@@ -119,8 +129,12 @@ Routes get_server_route(std::stringstream &ss)
 		}
 		if (dash != "-" || value.empty() || key.empty() || point != ":")
 			throw(std::runtime_error("Invalid config route"));
+		if(!is_valid_route_key(key))
+			throw(std::runtime_error("Invalid config route key"));
 		if (key == "path")
 		{
+			if(!route.get_path().empty())
+				throw(std::runtime_error("Invalid config path duplicated"));
 			if (value[value.size() - 1] == '/' && value != "/")
 				throw(std::runtime_error("Invalid config path"));
 			route.set_path(value);
@@ -128,6 +142,8 @@ Routes get_server_route(std::stringstream &ss)
 		}
 		else if (key == "methods")
 		{
+			if(!route.get_methods().empty())
+				throw(std::runtime_error("Invalid config method duplicated"));
 			do
 			{
 				if (check_value(value))
@@ -146,11 +162,15 @@ Routes get_server_route(std::stringstream &ss)
 		}
 		else if (key == "default_file")
 		{
+			if(!route.get_default_file().empty())
+				throw(std::runtime_error("Invalid config default_file duplicated"));
 			route.set_default_file(value);
 			check_multiple(value, ss_2);
 		}
 		else if (key == "directory_listing")
 		{
+			if(route.get_directory_listing())
+				throw(std::runtime_error("Invalid config directory_listing duplicated"));
 			if (value == "false")
 				route.set_directory_listing(false);
 			else if (value == "true")
@@ -161,18 +181,24 @@ Routes get_server_route(std::stringstream &ss)
 		}
 		else if (key == "cgi_bin")
 		{
+			if(!route.get_cgi_bin().empty())
+				throw(std::runtime_error("Invalid config cgi_bin duplicated"));
 			route.set_cgi_bin(value);
 			check_multiple(value, ss_2);
 		}
 		else if (key == "cgi_extension")
 		{
+			if(!route.get_cgi_extension().empty())
+				throw(std::runtime_error("Invalid config cgi_extension duplicated"));
 			route.set_cgi_extension(value);
-			if( value[0] != '.')
+			if(value[0] != '.')
 				throw(std::runtime_error("Invalid config cgi_extension"));
 			check_multiple(value, ss_2);
 		}
 		else if (key == "upload_enabled")
 		{
+			if(route.get_upload_enabled())
+				throw(std::runtime_error("Invalid config upload_enabled duplicated"));
 			if (value == "false")
 				route.set_upload_enabled(false);
 			else if (value == "true")
@@ -183,16 +209,31 @@ Routes get_server_route(std::stringstream &ss)
 		}
 		else if (key == "upload_directory")
 		{
+			if(!route.get_upload_directory().empty())
+				throw(std::runtime_error("Invalid config upload_directory duplicated"));
 			route.set_upload_directory(value);
 			check_multiple(value, ss_2);
 		}
 		else if (key == "redirect_url")
 		{
+			if(!route.get_redirect_url().empty())
+				throw(std::runtime_error("Invalid config redirect_url duplicated"));
 			route.set_redirect_url(value);
 			check_multiple(value, ss_2);
 		}
 	}
 	return route;
+}
+
+bool is_valid_key(std::string key)
+{
+	std::string valid_key[] = {"host", "port", "error_pages", "client_body_limit", "route", "root"};
+	for (int i = 0; i < 6; i++)
+	{
+		if (key == valid_key[i])
+			return true;
+	}
+	return false;
 }
 
 Server_Config get_server_config(std::stringstream &ss)
@@ -228,14 +269,20 @@ Server_Config get_server_config(std::stringstream &ss)
 			throw(std::runtime_error("Invalid config syntax"));
 		if (key != "route" && value.empty())
 			throw(std::runtime_error("Invalid config syntax"));
+		if(!is_valid_key(key))
+			throw(std::runtime_error("Invalid config key"));
 		if (key == "host" && ss_2)
 		{
+			if(!new_serve.get_host().empty())
+				throw(std::runtime_error("Invalid config host duplicated"));
 			if(!is_valid_ip(value))
 				throw(std::runtime_error("Invalid config host"));
 			new_serve.set_host(value);
 		}
 		else if (key == "port" && ss_2)
 		{
+			if(new_serve.get_port() != 0)
+				throw(std::runtime_error("Invalid config port duplicated"));
 			if (value.find_first_not_of("0123456789") != std::string::npos)
 				throw(std::runtime_error("Invalid config port"));
 			number = ft_atoi(value);
@@ -243,6 +290,8 @@ Server_Config get_server_config(std::stringstream &ss)
 		}
 		else if (key == "root" && ss_2)
 		{
+			if(!new_serve.get_root().empty())
+				throw(std::runtime_error("Invalid config root duplicated"));
 			if(value[value.size() - 1] == '/')
 				throw std::runtime_error("Invalid config root");
 			new_serve.set_root(value);
@@ -250,6 +299,8 @@ Server_Config get_server_config(std::stringstream &ss)
 		}
 		else if (key == "error_pages" && ss_2)
 		{
+			if(!new_serve.get_error_pages().empty())
+				throw(std::runtime_error("Invalid config error_pages duplicated"));
 			std::vector<std::string> page;
 			do
 			{
@@ -270,6 +321,8 @@ Server_Config get_server_config(std::stringstream &ss)
 		}
 		else if (key == "client_body_limit")
 		{
+			if(new_serve.get_client_body_limit() != 1000000)
+				throw(std::runtime_error("Invalid config client_body_limit duplicated"));
 			if (value.find_first_not_of("0123456789") != std::string::npos)
 				throw(std::runtime_error("Invalid config client_body_limit"));
 			number = ft_atoi(value);
@@ -308,7 +361,6 @@ void Config::parse_config(std::string &config_file)
 	std::string line;
 	while(std::getline(ss, line))
 	{
-
 		remove_comment(line);
 		if (line.empty())
 			continue;
