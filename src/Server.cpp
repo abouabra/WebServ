@@ -204,30 +204,27 @@ int Server::read_from_client(Client &client, int i)
 	client.set_timer(time(NULL));
 
 	// log("Reading from socket: " + itoa(client.get_socket_fd()), WARNING);
-	std::string total;
-	while(true)
+	std::memset(buffer, 0, sizeof(buffer));
+	int bytes_read = recv(client.get_socket_fd(), buffer, size, 0);
+	if(bytes_read == -1)
+		return 1;
+	if(bytes_read == 0)
 	{
-		std::memset(buffer, 0, sizeof(buffer));
-		int bytes_read = recv(client.get_socket_fd(), buffer, size, 0);
-		if(bytes_read == -1)
-			return 1;
-		if(bytes_read == 0)
-		{
-			close_connection(client, i);
-			return 1;
-		}
-		total.append(buffer, bytes_read);
-		if(bytes_read < size)
-			break;
+		close_connection(client, i);
+		return 1;
 	}
-	// std::cout << total << std::endl;
-	client.get_request().set_request_buff(total);
-	client.get_request().set_server_config(client.get_server_config());
-	client.get_request().parse_request();
+	client.get_request().set_request_buff(client.get_request().get_request_buff() + std::string(buffer, bytes_read));
+	if(bytes_read < size)
+	{
+		client.get_request().set_server_config(client.get_server_config());
+		client.get_request().parse_request();
 
-	// FD_CLR(client.get_socket_fd(), &master);//to hande keep-alive
-	FD_SET(client.get_socket_fd(), &writes);
-	return 0;
+		// FD_CLR(client.get_socket_fd(), &master);//to hande keep-alive
+		FD_SET(client.get_socket_fd(), &writes);
+		client.get_request().set_request_buff("");
+		return 0;
+	}
+	return 1;
 }
 
 int Server::write_to_client(Client &client, int index)

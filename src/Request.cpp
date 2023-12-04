@@ -113,6 +113,11 @@ void Request::set_request_buff(std::string request_buff)
 	this->request_buff = request_buff;
 }
 
+std::string Request::get_request_buff()
+{
+	return request_buff;
+}
+
 Server_Config& Request::get_server_config()
 {
 	return server_config;

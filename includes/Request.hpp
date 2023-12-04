@@ -63,6 +63,7 @@ public:
 
 	void parse_request();
 	void set_request_buff(std::string request_buff);
+	std::string get_request_buff();
 	void fill_info();
 
 	
