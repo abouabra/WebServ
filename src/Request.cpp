@@ -717,12 +717,22 @@ bool Request::if_location_support_upload(int index)
 void Request::serve_upload(int index)
 {
 	// std::cout << request_body << std::endl;
+	if (request_body.empty())
+	{
+		response.set_status_code(204)
+			.set_content_type("text/html")
+			.set_connection(connection)
+			.set_body(check_body( "error_pages/" + itoa(204) + ".html"))
+			.set_status_message(status_message[itoa(204)])
+			.build_raw_response();
+		return;
+	}
 	std::string filename = request_body.substr(request_body.find("filename=\"") + 10);
 	filename = filename.substr(0, filename.find("\""));
 	// std::cout << "filename: " << filename << std::endl;
 
 	std::string body = request_body.substr(request_body.find("\r\n\r\n") + 4);
-	//body = body.substr(0, body.find("\r\n-----"));
+	body = body.substr(0, body.find("\r\n-----"));
 	//?????
 	//file path change to custem path
 	// std::string file_path = server_config.get_routes()[index].get_upload_directory() + "/" + filename;

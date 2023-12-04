@@ -210,6 +210,7 @@ int Server::read_from_client(Client &client, int i)
 	client.get_request().set_request_buff(client.get_request().get_request_buff() + std::string(buffer, bytes_read));
 	if(bytes_read < size)
 	{
+		// std::cout << client.get_request().get_request_buff() << std::endl;
 		client.get_request().set_server_config(client.get_server_config());
 		client.get_request().parse_request();
 
