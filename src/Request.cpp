@@ -1,5 +1,6 @@
 #include "../includes/Request.hpp"
 #include "../includes/Config.hpp"
+
 Request::Request()
 {
 	status_message["100"] = " Continue";

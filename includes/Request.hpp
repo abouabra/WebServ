@@ -14,6 +14,7 @@
 #include <sys/wait.h>
 #include <cstdlib>
 #include <ctime>
+#include <unistd.h>
 
 
 class Request {
