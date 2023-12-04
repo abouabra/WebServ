@@ -206,9 +206,7 @@ int Server::read_from_client(Client &client, int i)
 	// log("Reading from socket: " + itoa(client.get_socket_fd()), WARNING);
 	std::memset(buffer, 0, sizeof(buffer));
 	int bytes_read = recv(client.get_socket_fd(), buffer, size, 0);
-	if(bytes_read == -1)
-		return 1;
-	if(bytes_read == 0)
+	if(bytes_read < 1)
 	{
 		close_connection(client, i);
 		return 1;

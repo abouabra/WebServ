@@ -49,7 +49,7 @@ std::string Config::read_config(std::string &config_file)
 	if(!file.is_open())
 	{
 		log("Error: Could not open config file", ERROR);
-		throw std::exception();
+		throw std::runtime_error("Error: Could not open config file");
 	}
 	std::string content;
 	std::string line;
