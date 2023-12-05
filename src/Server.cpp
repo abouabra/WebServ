@@ -195,7 +195,7 @@ int Server::check_for_timeout(Client &client, int index)
 
 int Server::read_from_client(Client &client, int i)
 {
-	int size = 1024;
+	int size = 10240;
 	char buffer[size];
 	client.set_timer(std::time(NULL));
 
