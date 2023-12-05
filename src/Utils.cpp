@@ -125,9 +125,32 @@ int count_num(std::string str, char c)
 	}
 	return count;
 }
-
-char **make_argv(std::string str, std::string cgi_bin_path, std::string cgi_bin)
+std::string convert_body(std::string body, std::string content_type)
 {
+	if(content_type == "application/x-www-form-urlencoded")
+	{
+		std::stringstream ss(body);
+		std::string token;
+		std::string new_body;
+		while(std::getline(ss, token, '&'))
+		{
+			std::string key = token.substr(0, token.find('='));
+			std::string value = token.substr(token.find('=') + 1);
+			new_body += key + "=" + urlDecode(value) + "\n";
+		}
+		return new_body;
+	}
+	if(content_type == "multipart/form-data")
+	{
+		std::cout << "body: " << body << std::endl;
+		return body;
+	}
+	return body;
+}
+
+char **make_argv(std::string str, std::string content_type, std::string cgi_bin_path, std::string cgi_bin)
+{
+	str = convert_body(str, content_type);
 	std::stringstream ss(str);
 	std::string token;
 	int count = count_num(str, '\n');

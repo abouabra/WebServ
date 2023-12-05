@@ -1,5 +1,8 @@
 #include "../includes/Request.hpp"
 #include "../includes/Config.hpp"
+#include <ostream>
+#include <string>
+#include <sys/_types/_size_t.h>
 
 Request::Request()
 {
@@ -30,6 +33,7 @@ Request::Request()
 	status_message["409"] = " Conflict";
 	status_message["413"] = " Payload Too Large";
 	status_message["414"] = " URI Too Long";
+	status_message["415"] = " Unsupported Media Type";
 	status_message["500"] = " Internal Server Error";
 	status_message["501"] = " Not Implemented";
 	status_message["505"] = " HTTP Version Not Supported";
@@ -40,7 +44,7 @@ Request::Request()
 
 	mime_types["html"] = "text/html";
 	mime_types["css"] = "text/css";
-	mime_types["js"] = "application/javascript";
+	mime_types["js"]  = "application/javascript";
 	mime_types["jpg"] = "image/jpeg";
 	mime_types["png"] = "image/png";
 	mime_types["txt"] = "text/plain";
@@ -124,6 +128,7 @@ void Request::fill_info()
 	// bool is_body = false;
 	while(std::getline(ss, line))
 	{
+		// std::cout << "line: " << line << std::endl;
 		if(line.find("\r") != std::string::npos)
 			line.replace(line.find_last_of("\r"), 1, "");
 		if(line.find("HTTP/1.1") != std::string::npos)
@@ -162,18 +167,26 @@ void Request::fill_info()
 			break;
 		}
 	}
+	// std::cout << uri	<< std::endl;
+	if (content_length.empty() && method == "POST")
+	{
+		response.set_status_code(411)
+			.set_content_type("text/html")
+			.set_connection(connection)
+			.set_body(check_body( "error_pages/" + itoa(411) + ".html"))
+			.set_status_message(status_message[itoa(411)])
+			.build_raw_response();
+		return;
+	}
 	request_body.clear();
 	if (is_body)
 	{
-		while(std::getline(ss, line))
-		{
-			// std::cout << "im here" << std::endl;
-			request_body += line;
-			if(ss.eof())
-				break;
-			request_body += "\n";
-		}
-		// request_body = urlDecode(request_body);
+		if(content_type.find("application/x-www-form-urlencoded") != std::string::npos)
+			request_body = application_x_www_form_urlencoded_body(ss);
+		else if(content_type.find("multipart/form-data") != std::string::npos)
+			request_body = multipart_form_data_body(ss);
+		else
+			request_body = text_plain_body(ss);
 	}
 	if(uri.find("?") != std::string::npos) //need to check if body is url encoded reminder
 	{
@@ -190,6 +203,112 @@ void Request::fill_info()
 	}
 	// std::cout << "request_body: " << request_body << std::endl;
 	// std::cout << "Cookie: " << cookie << std::endl;
+}
+
+std::string Request::text_plain_body(std::stringstream &ss)
+{
+	std::string body;
+	std::string line;
+	while(std::getline(ss, line))
+	{
+		body += line;
+		if(ss.eof())
+			break;
+		body += "\n";
+	}
+	return body;
+}
+std::string get_boundary(std::string content_type)
+{
+	size_t start = content_type.find("boundary=") + 9;
+	size_t end = content_type.find(";", start);
+	return content_type.substr(start, end - start);
+}
+
+std::vector<std::string> split_string(std::string str, std::string delimiter)
+{
+	std::vector<std::string> parts;
+	size_t pos = 0;
+	std::string token;
+	while ((pos = str.find(delimiter)) != std::string::npos)
+	{
+		token = str.substr(0, pos);
+		parts.push_back(token);
+		str.erase(0, pos + delimiter.length());
+	}
+	parts.push_back(str);
+	return parts;
+}
+std::string Request::multipart_form_data_body(std::stringstream &ss)
+{
+	std::string body;
+	std::string line;
+	while(std::getline(ss, line))
+	{
+		body += line;
+		if(ss.eof())
+			break;
+		body += "\n";
+	}
+	// handle upload
+	if(body.find("filename=") != std::string::npos)
+		return body;
+	body = ft_trim(body, "\n\r");
+	body = body.substr(0, body.find_last_of("--") - 1);
+	// std::cout << "body: " << body << std::endl;
+	// Parse the multipart/form-data body
+	std::string boundary = "--" + get_boundary(content_type);
+	std::vector<std::string> parts = split_string(body, boundary);
+	// std::cout << "size: " << parts.size() << std::endl;
+	std::string return_body;
+	for (size_t i = 0; i < parts.size(); ++i)
+	{
+		std::string part = parts[i];
+		if (part.empty())
+			continue;
+		// std::cout << "part: " << part << std::endl;
+		std::vector<std::string> lines = split_string(part, "\n");
+		
+		std::string name;
+		std::string value;
+		
+		for (size_t j = 0; j < lines.size(); ++j)
+		{
+			if (lines[j].empty())
+				continue;
+			std::string line = lines[j];
+			if (line.find("Content-Disposition: form-data") != std::string::npos)
+			{
+				size_t start = line.find("name=\"") + 6;
+				size_t end = line.find("\"", start);
+				name = line.substr(start, end - start);
+			}
+			else
+			{
+				value += ft_trim(line, "\r");
+			}
+		}
+		return_body += name + "=" + value + "\n";
+		// std::cout << "name: " << name << std::endl;
+		// std::cout << "value: " << value << std::endl;
+	}
+	// std::cout << "body: " << return_body << std::endl;
+	return return_body;
+// std::cout << "body: " << body << std::endl;
+}
+
+std::string Request::application_x_www_form_urlencoded_body(std::stringstream &ss)
+{
+	std::string body;
+	std::string line;
+	while(std::getline(ss, line))
+	{
+		body += line;
+		if(ss.eof())
+			break;
+		body += "\n";
+	}
+	return body;
 }
 
 std::string Request::get_connection()
@@ -517,7 +636,7 @@ void Request::serve_cgi(int index, std::string cgi_script_path)
 {
 	// std::cout << "request_body: " << request_body << std::endl;
 	std::string cgi_bin_path = server_config.get_routes()[index].get_cgi_bin();
-	char **argv  = make_argv(request_body, cgi_bin_path, cgi_script_path);
+	char **argv  = make_argv(request_body, content_type, cgi_bin_path, cgi_script_path);
 	// for(int i = 0; argv[i]; i++)
 	// 	std::cout << "argv[" << i << "]: " << argv[i] << std::endl;
 	// std::cout << "cgi_bin_path: " << cgi_bin_path << std::endl;
@@ -727,6 +846,17 @@ void Request::serve_upload(int index)
 			.build_raw_response();
 		return;
 	}
+	if(content_type.find("multipart/form-data") == std::string::npos)
+	{
+		response.set_status_code(415)
+			.set_content_type("text/html")
+			.set_connection(connection)
+			.set_body(check_body( "error_pages/" + itoa(415) + ".html"))
+			.set_status_message(status_message[itoa(415)])
+			.build_raw_response();
+		return;
+	}
+	// std::cout << "request_body: " << request_body.substr(0, 200) << std::endl;
 	std::string filename = request_body.substr(request_body.find("filename=\"") + 10);
 	filename = filename.substr(0, filename.find("\""));
 	// std::cout << "filename: " << filename << std::endl;

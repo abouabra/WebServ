@@ -5,6 +5,7 @@
 #include "Utils.hpp"
 #include "Response.hpp"
 #include "Config.hpp"
+#include <sstream>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -93,4 +94,7 @@ public:
 	void set_time(unsigned int tm);
 	bool has_write_acces_on_folder(std::string path);
 	int valid_cookie();
+	std::string application_x_www_form_urlencoded_body(std::stringstream &ss);
+	std::string multipart_form_data_body(std::stringstream &ss);
+	std::string text_plain_body(std::stringstream &ss);
 };

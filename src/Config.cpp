@@ -222,6 +222,8 @@ Routes get_server_route(std::stringstream &ss)
 			check_multiple(value, ss_2);
 		}
 	}
+	if ((route.get_cgi_bin().empty() && !route.get_cgi_extension().empty() )|| (!route.get_cgi_bin().empty() && route.get_cgi_extension().empty()))
+		throw(std::runtime_error("Invalid config cgi_bin or cgi_extension"));
 	return route;
 }
 

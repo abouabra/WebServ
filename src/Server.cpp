@@ -229,7 +229,10 @@ int Server::write_to_client(Client &client, int index)
 	// log("Sending to socket: " + itoa(client.get_socket_fd()), WARNING);
 	int bytes_sent = send(client.get_socket_fd(), response_body.c_str(), response_body.length(), 0);
 	if(bytes_sent == -1)
+	{
+		close_connection(client, index);
 		return 1;
+	}
 	if (client.get_request().get_connection() == "close")
 		close_connection(client, index);
 	else
