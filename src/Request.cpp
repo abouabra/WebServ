@@ -416,13 +416,30 @@ int Request::get_matched_location_for_request_uri()
 	return -1;
 }
 
+bool Request::check_if_redirect_before(std::string uri)
+{
+	for (size_t i= 0; i < server_config.get_routes().size(); i++)
+	{
+		// std::cout << uri << " | " << server_config.get_routes()[i].get_path() << std::endl;
+		if (!server_config.get_routes()[i].get_redirect_url().empty() && server_config.get_routes()[i].get_path() == uri)
+		{
+			std::string redirect_url = uri + "/";
+			response.set_raw_response("HTTP/1.1 301 Moved Permanently\r\nLocation: " + redirect_url + "\r\nContent-Type: text/html\r\nContent-Length: 0\r\nConnection: " + connection + "\r\n\r\n");
+			return true;
+		}
+	}
+	return false;
+}
+
 bool Request::is_location_have_redirection(int index)
 {
+	if(check_if_redirect_before(uri))
+		return true;
 	if (index == -1)
 		return false;
 	std::string redirect_url = server_config.get_routes()[index].get_redirect_url();
 	std::string location = uri.substr(0, uri.find_last_of("/") + 1);
-
+	// std::cout << uri << " | " << redirect_url  << std::endl;
 	if(!redirect_url.empty() && location == uri)
 	{
 		redirect_url.insert(0, "/");
@@ -751,17 +768,7 @@ void Request::execute_cgi(std::string path_of_cgi_bin, char **argv)
 
 void Request::serve_file(std::string path)
 {
-	size_t pos = path.find_last_of(".");
-	if(pos == std::string::npos)
-	{
-		response.set_status_code(403)
-			.set_content_type("text/html")
-			.set_connection(connection)
-			.set_body(check_body( "error_pages/" + itoa(403) + ".html"))
-			.set_status_message(status_message[itoa(403)])
-			.build_raw_response();
-		return;
-	}
+	int pos = (int)path.find_last_of(".");
 	std::string extention = path.substr(pos + 1);
 	response.set_status_code(200)
 		.set_content_type(mime_types[extention])

@@ -85,6 +85,7 @@ public:
 	void serve_cgi(int index, std::string path);
 	void serve_file(std::string path);
 	bool if_location_support_upload(int index);
+	bool check_if_redirect_before(std::string uri);
 	void serve_upload(int index);
 	void execute_cgi(std::string path_of_cgi_bin, char **argv);
 	void delete_item(std::string path);

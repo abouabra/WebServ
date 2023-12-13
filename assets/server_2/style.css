@@ -1,26 +1,7 @@
-@font-face {
-	font-family: "FuturaPT";
-	font-style: normal;
-	font-weight: normal;
-	src: url("ParaType-FuturaPTBook.otf") format("opentype");
-  }
-  
-  @font-face {
-	font-family: "FuturaPT";
-	font-style: italic;
-	font-weight: normal;
-	src: url("ParaType-FuturaPTBookOblique.ttf") format("truetype");
-  }
-  
-  @font-face {
-	font-family: "FuturaPT";
-	font-style: normal;
-	font-weight: bold;
-	src: url("ParaType-FuturaPTHeavy.otf") format("opentype");
-  }
   
   :root {
 	--main-text-color: #c7c7c7;
+
   }
   
   body {
@@ -47,7 +28,7 @@
   a {
 	color: var(--main-text-color);
 	text-decoration: none;
-	font-family: FuturaPT;
+	font-family: Arial, Helvetica, sans-serif;
   }
   
   a:hover {
